@@ -6,8 +6,7 @@ PhishSense uses Gemini to create endless realistic scams, then reveals the red f
 
 Built at **Emory Hacks 2026** by Abigail, Bryan, Ismahan, and Yusra.
 
-**Live site:** [phishsense.club](https://phishsense.club)
-
+**Live site:** [phishsense-livid.vercel.app](https://phishsense-livid.vercel.app/)
 ---
 
 ## Why we built it
