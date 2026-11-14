@@ -185,7 +185,10 @@ async function nextRound() {
   $("btn-next").classList.add("hidden");
   $("btn-phish").disabled = $("btn-legit").disabled = true;
   $("message").className = "card";   // clears the glow or shake from the last round
+  $("message").style.transformOrigin = "";
   $("pop-layer").innerHTML = "";
+  $("reaction").className = "reaction hidden";
+  $("reaction").textContent = "";
   hidePeek();
   renderDots();
   renderStreak();
@@ -393,37 +396,189 @@ function floatScore(text) {
   setTimeout(() => bit.remove(), 1500);
 }
 
+// ---------- Answer reactions: hooked, dodged, too cautious, safe ----------
+const REACTIONS = {
+  hooked:   "🎣 You got hooked!",
+  dodged:   "✅ You dodged the hook!",
+  cautious: "🤔 Too cautious! This one was safe.",
+  safe:     "✅ Correct, this one's safe.",
+};
+
+// Which of the 4 reactions fits: the real answer vs. the player's guess.
+function reactionFor(r, guess) {
+  const real = String(r.game_answer || "").toLowerCase();
+  const said = guess.toLowerCase();
+  if (real === "phish") return said === "phish" ? "dodged" : "hooked";
+  if (real === "legit") return said === "legit" ? "safe" : "cautious";
+  return r.correct ? "safe" : "hooked";
+}
+
+function showReaction(kind) {
+  const el = $("reaction");
+  el.textContent = REACTIONS[kind];
+  el.className = `reaction ${kind}`;
+}
+
+// The hook and line, drawn as inline SVG (a dark outline under a light
+// stroke, so it shows up over both the navy page and the white email).
+const HOOK_SVG = `<svg class="hook" width="34" height="48" viewBox="0 0 34 48" aria-hidden="true">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#0a1a33" stroke-width="5.5"><circle cx="20" cy="5" r="3.5"/><path d="M20 8.5V32a9 9 0 0 1-18 0v-8l5 5"/></g>
+    <g stroke="#e9f1f7" stroke-width="3"><circle cx="20" cy="5" r="3.5"/><path d="M20 8.5V32a9 9 0 0 1-18 0v-8l5 5"/></g>
+  </g>
+</svg>`;
+
+// The rig hangs from the top of the visible screen. It lives in page
+// coordinates, so it stays lined up with the card even if the page scrolls.
+function makeRig(x, drop) {
+  const rig = document.createElement("div");
+  rig.className = "hook-rig";
+  rig.setAttribute("aria-hidden", "true");
+  rig.style.left = `${x + window.scrollX}px`;
+  rig.style.top = `${window.scrollY}px`;
+  rig.style.setProperty("--drop", `${drop}px`);
+  rig.innerHTML = `<span class="hook-line"></span>${HOOK_SVG}`;
+  document.body.appendChild(rig);
+  return rig;
+}
+
+const done = (anim) => anim.finished.catch(() => {});
+
+// Where the hook should aim: the top of the visible part of the message.
+function cardTarget() {
+  const card = $("message");
+  const box = (card.firstElementChild || card).getBoundingClientRect();
+  return { card, box, top: Math.max(box.top, 12), x: box.left + box.width / 2 };
+}
+
+// Phish, player said Legit: the hook drops, bites, and yanks the card away.
+async function playHooked() {
+  const { card, box, top, x } = cardTarget();
+  const drop = Math.max(top - 26, 4);   // hook's bend lands just inside the card's top edge
+  const above = drop + 60;              // far enough up to start off screen
+  const lift = box.bottom + 80;         // far enough up to leave the screen
+  const rig = makeRig(x, drop);
+  const pull = "cubic-bezier(0.55, 0, 0.8, 0.2)";
+
+  card.classList.add("hook-anim");
+  card.style.transformOrigin = `50% ${top - card.getBoundingClientRect().top + 14}px`;
+
+  const opts = { duration: 1250, fill: "forwards" };
+  const rigAnim = rig.animate([
+    { transform: `translateY(${-above}px)`, easing: "cubic-bezier(0.3, 0.6, 0.4, 1)" },
+    { transform: "translateY(0px)", offset: 0.34 },
+    { transform: "translateY(7px)", offset: 0.42 },
+    { transform: "translateY(0px)", offset: 0.5, easing: pull },
+    { transform: `translateY(${-lift}px)` },
+  ], opts);
+  const cardAnim = card.animate([
+    { transform: "translateY(0px) rotate(0deg)" },
+    { transform: "translateY(0px) rotate(0deg)", offset: 0.34 },
+    { transform: "translateY(7px) rotate(0deg)", offset: 0.42 },
+    { transform: "translateY(0px) rotate(-2deg)", offset: 0.5, easing: pull },
+    { transform: `translateY(${-lift}px) rotate(-4deg)` },
+  ], opts);
+
+  await Promise.all([done(rigAnim), done(cardAnim)]);
+  rig.remove();
+
+  // Bring the message back so the player can read it next to the explanation.
+  const back = card.animate(
+    [{ opacity: 0, transform: "translateY(-12px)" }, { opacity: 1, transform: "none" }],
+    { duration: 280, easing: "ease-out" }
+  );
+  cardAnim.cancel();
+  done(back).then(() => card.classList.remove("hook-anim"));
+}
+
+// Phish, player said Phish: the hook swings down, the card ducks, the hook misses.
+async function playDodged() {
+  const { card, top, x } = cardTarget();
+  const drop = Math.max(top - 36, 4);   // would just graze the card if it stayed put
+  const above = drop + 60;
+  const rig = makeRig(x, drop);
+
+  card.classList.add("hook-anim");
+
+  const opts = { duration: 1100 };
+  const rigAnim = rig.animate([
+    { transform: `translateY(${-above}px) rotate(0deg)`, easing: "ease-out" },
+    { transform: "translateY(0px) rotate(0deg)", offset: 0.3 },
+    { transform: "translateY(0px) rotate(4deg)", offset: 0.42 },
+    { transform: "translateY(0px) rotate(-3deg)", offset: 0.54 },
+    { transform: "translateY(0px) rotate(0deg)", offset: 0.64, easing: "ease-in" },
+    { transform: `translateY(${-above}px) rotate(0deg)` },
+  ], { ...opts, fill: "forwards" });
+  const cardAnim = card.animate([
+    { transform: "translateY(0px) scale(1)" },
+    { transform: "translateY(0px) scale(1)", offset: 0.16 },
+    { transform: "translateY(18px) scale(0.98)", offset: 0.3 },
+    { transform: "translateY(18px) scale(0.98)", offset: 0.62 },
+    { transform: "translateY(0px) scale(1)", offset: 0.82 },
+    { transform: "translateY(0px) scale(1)" },
+  ], opts);
+
+  await Promise.all([done(rigAnim), done(cardAnim)]);
+  rig.remove();
+  card.classList.remove("hook-anim");
+}
+
+let answering = false;
+
 async function answer(guess) {
+  if (answering) return;   // ignore double clicks while a reaction plays
+  answering = true;
   $("btn-phish").disabled = $("btn-legit").disabled = true;
-  const r = await apiAnswer(current.scenario_id, guess);
+  hidePeek();
 
-  results[round - 1] = !!r.correct;
-  if (r.correct) {
-    correct++;
-    streak++;
-    $("message").classList.add("is-correct");
-    floatScore(`+${PER_CORRECT}`);
-  } else {
-    streak = 0;
-    $("message").classList.add("is-wrong");
-    flagList(r.red_flags).forEach((f) => missed.push(f));
+  try {
+    const r = await apiAnswer(current.scenario_id, guess);
+    const kind = reactionFor(r, guess);
+
+    results[round - 1] = !!r.correct;
+    if (r.correct) {
+      correct++;
+      streak++;
+    } else {
+      streak = 0;
+      flagList(r.red_flags).forEach((f) => missed.push(f));
+    }
+    renderDots();
+    renderStreak();
+    showReaction(kind);
+
+    // Hook animations (skipped when the player asks for less motion).
+    const animate = !calmMode() && typeof $("message").animate === "function";
+    if (animate && kind === "hooked") await playHooked();
+    if (animate && kind === "dodged") await playDodged();
+
+    const msg = $("message");
+    if (kind === "hooked") msg.classList.add("is-hooked");
+    else if (kind === "cautious") msg.classList.add("is-cautious");
+    else {
+      msg.classList.add("is-correct");
+      floatScore(`+${PER_CORRECT}`);
+    }
+
+    const flags = r.red_flags
+      ? `<p><b>Red flags:</b></p><ul>${flagList(r.red_flags).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`
+      : "";
+    const went = current.link
+      ? `<p class="link-reveal">🔍 That link really went to <b>${esc(parseLink(current.link).domain)}</b></p>`
+      : "";
+    const nudge = kind === "cautious"
+      ? `<p class="gentle-tip">Being careful is a good habit! Before you report a message, check the sender and link against your trusted contacts.</p>`
+      : "";
+    $("result").innerHTML = `
+      <h3>This one was <b>${esc(r.game_answer)}</b>.</h3>
+      ${flags}<p>${esc(r.explanation)}</p>${went}${nudge}`;
+    $("result").className = `card ${kind === "hooked" ? "bad" : kind === "cautious" ? "gentle" : "good"}`;
+    $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
+    $("btn-next").textContent = round < ROUNDS ? "Next" : "See results";
+    $("btn-next").classList.remove("hidden");
+  } finally {
+    answering = false;
   }
-  renderDots();
-  renderStreak();
-
-  const flags = r.red_flags
-    ? `<p><b>Red flags:</b></p><ul>${flagList(r.red_flags).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`
-    : "";
-  const went = current.link
-    ? `<p class="link-reveal">🔍 That link really went to <b>${esc(parseLink(current.link).domain)}</b></p>`
-    : "";
-  $("result").innerHTML = `
-    <h3>${r.correct ? "✅ Correct!" : "❌ Not quite."} This one was <b>${r.game_answer}</b>.</h3>
-    ${flags}<p>${esc(r.explanation)}</p>${went}`;
-  $("result").className = `card ${r.correct ? "good" : "bad"}`;
-  $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
-  $("btn-next").textContent = round < ROUNDS ? "Next" : "See results";
-  $("btn-next").classList.remove("hidden");
 }
 
 $("btn-phish").addEventListener("click", () => answer("Phish"));
