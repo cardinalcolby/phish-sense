@@ -1,0 +1,22 @@
+<pasted_content id="e1c4">
+Players currently have no way to know the real website for outside companies (NewsNow, ConnectPro, TechHub), so those rounds feel like guessing. Please add a "Trusted contacts" reference so every round can be solved by checking.
+
+1. In public/ (index.html, style.css, app.js):
+   - Add a "📇 Trusted contacts" card to the mission briefing screen with this table:
+     Bayline Energy (your company): bayline-energy.com, (404) 555-0100
+     NewsNow: newsnow.com
+     ConnectPro: connectpro.com
+     TechHub: techhub.com
+   - During play, add a small "📇 Trusted contacts" button near the progress dots that opens and closes the same list as a panel. It must not cover the Phish and Legit buttons.
+   - Add one line under the table: "Scammers use names you trust with addresses that don't match. Always compare."
+
+2. In lib/game.js, update the Gemini prompt (buildPrompt) so Gemini only uses these companies:
+   - Legit messages must use the real domain or phone number from the list.
+   - Phish messages must impersonate one of these companies using a lookalike address (for example a different domain, an extra word, or a subdomain trick), and the explanation should say what the real address is.
+   - No other company names.
+   Keep everything else in lib/game.js the same.
+
+3. Keep practice mode, scoring, animations, the link inspect popup, and the recap working.
+
+When you're done: tell me how to test it, show me the full final code for every changed file, and commit with the message "Add trusted contacts directory" and push.
+</pasted_content id="e1c4">
