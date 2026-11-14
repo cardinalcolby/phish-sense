@@ -30,4 +30,89 @@ Phishing is one of the most common ways attackers get in, but most security trai
 
 ## No sign-up, on purpose
 
-Players just enter a name and play. We don't
+Players just enter a name and play. We don't We don't collect emails, passwords, or any personal information. A security training app shouldn't create new data that needs protecting, and it means anyone can start learning in seconds.
+
+## Safe by design
+
+- **Fictional only:** every company, brand, and person in the game is made up. The company players "work at" is Bayline Energy (`@bayline-energy.com`, main line (404) 555-0100).
+- **No real phone numbers:** every number uses the reserved 555-01xx range.
+- **No live links:** links are shown as plain text and are never clickable.
+- **No peeking:** the correct answer stays on the server until the player guesses.
+- **No secrets in the code:** API keys and the database password live in a `.env` file that is never committed.
+
+## How it's built
+
+| Piece | What it does |
+|---|---|
+| **Game screens** (`public/`) | HTML, CSS, and JavaScript. Inbox-style emails and phone-style texts. |
+| **Backend** (`server.js`) | Node.js and Express. Serves scenarios, checks answers, saves scores. |
+| **Gemini API** | Writes a brand-new scenario every round, matched to the difficulty. |
+| **Tiger Data** (PostgreSQL) | Stores scenarios and the leaderboard. |
+| **Vultr** | Hosts the live app. |
+| **GoDaddy Registry** | Our domain, phishsense.club. |
+| **Entire** | Our team's git workflow. |
+
+### Gemini + backup scenarios
+
+Every scenario lives in one `scenarios` table, with a `source` column:
+
+- `sheet`: 20 hand-written, hand-checked scenarios (8 Easy, 7 Medium, 5 Hard; 15 emails and 5 texts).
+- `gemini`: new scenarios Gemini writes during play, saved automatically.
+
+When a round starts, the backend asks Gemini for a new scenario and shows it two of our backups as style examples. If Gemini is slow (over 6 seconds) or fails, the game quietly uses a backup instead, so players never see an error.
+
+## Run it yourself
+
+### Option 1: Practice mode (no setup)
+Open `public/index.html` in a browser, or right-click it in VS Code and choose **Open with Live Server**. The game runs on the 20 backup scenarios, and the leaderboard saves in your browser.
+
+### Option 2: Full app (Gemini + database)
+1. **Database:** create a Tiger Data service, open its SQL editor, paste in `setup.sql`, and run it. The last result should show easy 8, hard 5, medium 7.
+2. **Keys:** copy `.env.example` to `.env` and fill in:
+   - `DATABASE_URL`: your Tiger Data connection string
+   - `GEMINI_API_KEY`: from Google AI Studio
+   - `GEMINI_MODEL`: the current Gemini Flash model name
+3. **Run:** `npm install`, then `npm start`, and open http://localhost:3000
+
+The full app also works without a Gemini key. It just uses the backup scenarios.
+
+### API routes
+
+| Route | What it does |
+|---|---|
+| `GET /api/scenario?mode=easy` | Returns a message (Gemini first, backup if needed). Never includes the answer. |
+| `POST /api/answer` | `{ scenario_id, guess }` returns whether it was right, the red flags, and the explanation. |
+| `POST /api/score` | `{ username, points, badge }` saves a finished run. |
+| `GET /api/leaderboard` | Top 10 players. |
+
+## Project files
+
+```
+phish-sense/
+  public/
+    index.html      Game screens
+    style.css       Look and feel
+    app.js          Game logic
+    mock-data.js    Backup scenarios for practice mode
+    logo-badge.svg  Logo
+  server.js         Backend
+  setup.sql         Database setup + 20 backup scenarios
+  .env.example      Template for keys (copy to .env)
+```
+
+## What's next
+
+- **Accounts (optional):** save progress across devices, without collecting more data than needed.
+- **Scam Library:** search every scenario and red flag instantly, typos and all, powered by Typesense.
+- **More formats:** QR code phishing, voicemail transcripts, and fake login pages.
+- **Team mode:** let companies run phishing training with their own dashboards.
+- **Personal practice:** focus each player on the red flags they miss most.
+
+## Team
+
+| Name | Role |
+|---|---|
+| Abigail | Team lead, game screens, pitch |
+| Bryan | Backend, Gemini, deployment |
+| Ismahan | Database setup |
+| Yusra | Leaderboard and data |
