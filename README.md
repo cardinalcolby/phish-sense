@@ -7,6 +7,7 @@ PhishSense uses Gemini to create endless realistic scams, then reveals the red f
 Built at **Emory Hacks 2026** by Abigail, Bryan, Ismahan, and Yusra.
 
 **Live site:** [phishsense-livid.vercel.app](https://phishsense-livid.vercel.app/)
+
 ---
 
 ## Why we built it
@@ -47,8 +48,8 @@ Players just enter a name and play. We don't collect emails, passwords, or any p
 | **Game screens** (`public/`) | HTML, CSS, and JavaScript. Inbox-style emails and phone-style texts. |
 | **Backend** (`server.js`) | Node.js and Express. Serves scenarios, checks answers, saves scores. |
 | **Gemini API** | Writes a brand-new scenario every round, matched to the difficulty. |
-| **Tiger Data** (PostgreSQL) | Stores scenarios and the leaderboard. |
-| **Vultr** | Hosts the live app. |
+| **Vultr** (PostgreSQL) | Stores scenarios and the leaderboard. |
+| **Vercel** | Hosts the live site. |
 | **GoDaddy Registry** | Our domain, phishsense.club. |
 | **Entire** | Our team's git workflow. |
 
@@ -67,9 +68,9 @@ When a round starts, the backend asks Gemini for a new scenario and shows it two
 Open `public/index.html` in a browser, or right-click it in VS Code and choose **Open with Live Server**. The game runs on the 20 backup scenarios, and the leaderboard saves in your browser.
 
 ### Option 2: Full app (Gemini + database)
-1. **Database:** create a Tiger Data service, open its SQL editor, paste in `setup.sql`, and run it. The last result should show easy 8, hard 5, medium 7.
+1. **Database:** create a Vultr Managed Database (PostgreSQL). Connect to it with a SQL tool such as psql or pgAdmin, using the connection details from Vultr, then run `setup.sql`. The last result should show easy 8, hard 5, medium 7.
 2. **Keys:** copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL`: your Tiger Data connection string
+   - `DATABASE_URL`: your Vultr database connection string
    - `GEMINI_API_KEY`: from Google AI Studio
    - `GEMINI_MODEL`: the current Gemini Flash model name
 3. **Run:** `npm install`, then `npm start`, and open http://localhost:3000
@@ -112,7 +113,7 @@ phish-sense/
 
 | Name | Role |
 |---|---|
-| Abigail | Team lead, Frontend, game screens, pitch |
+| Abigail | Team lead, game screens, pitch |
 | Bryan | Backend, Gemini, deployment |
 | Ismahan | Database setup |
 | Yusra | Leaderboard and data |
