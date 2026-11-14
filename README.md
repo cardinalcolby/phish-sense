@@ -50,7 +50,6 @@ Players just enter a name and play. We don't collect emails, passwords, or any p
 | **Gemini API** | Writes a brand-new scenario every round, matched to the difficulty. |
 | **Vultr** (PostgreSQL) | Stores scenarios and the leaderboard. |
 | **Vercel** | Hosts the live site. |
-| **GoDaddy Registry** | Our domain, phishsense.club. |
 | **Entire** | Our team's git workflow. |
 
 ### Gemini + backup scenarios
