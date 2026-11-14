@@ -83,6 +83,35 @@ button:disabled { opacity: 0.5; cursor: default; }
 .dot.wrong { background: var(--red); border-color: var(--red); animation: dot-pop 0.4s ease; }
 
 .streak { margin: 0; font-size: 14px; font-weight: 600; color: var(--teal); white-space: nowrap; }
+.run-bar { flex-wrap: wrap; row-gap: 8px; }
+.run-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+/* ---------- Trusted contacts (briefing card + play panel) ---------- */
+.contacts-toggle {
+  font-size: 13px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  background: transparent; color: var(--text); border: 2px solid var(--navy-2);
+}
+.contacts-toggle:hover, .contacts-toggle.open { border-color: var(--teal); }
+.contacts-toggle.open { background: rgba(45, 224, 196, 0.12); }
+
+.contacts-title {
+  margin: 0 0 10px; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.contacts-panel { margin: 12px 0 4px; border: 1px solid #2b4a68; }
+.contacts-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.contacts-table th, .contacts-table td {
+  text-align: left; vertical-align: top; padding: 8px 6px;
+  border-bottom: 1px solid rgba(159, 183, 201, 0.18);
+}
+.contacts-table thead th {
+  padding-top: 0; font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.contacts-table tbody th { font-weight: 600; color: var(--text); }
+.contacts-table tbody th small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.contact-domain, .contact-phone { display: block; font-family: monospace; font-size: 14px; color: var(--teal); overflow-wrap: anywhere; }
+.contact-phone { color: var(--text); }
+.contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
 /* ---------- Message area: glow, shake, floating score ---------- */
 .message-wrap { position: relative; }
@@ -330,6 +359,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 
   .dot { width: 12px; height: 12px; }
   .streak { font-size: 13px; }
+  .dots { gap: 6px; }
+  .run-right { gap: 6px; }
+  .contacts-toggle { font-size: 12px; padding: 5px 9px; }
+  .contacts-table { font-size: 13px; }
   .pop-score { font-size: 34px; }
 
   .email-head { padding: 12px; gap: 10px; }

@@ -42,6 +42,10 @@
         <p id="mission-tip"></p>
         <p>Sort each message: <b>Phish</b> or <b>Legit</b>? Get 4 of 5 right to earn the badge.</p>
       </div>
+      <div class="card contacts">
+        <p class="contacts-title">📇 Trusted contacts</p>
+        <div class="contacts-list"></div>
+      </div>
       <div class="mission-buttons">
         <button id="btn-back" class="secondary">← Change difficulty</button>
         <button id="btn-start">Start mission</button>
@@ -52,7 +56,17 @@
     <section id="play-screen" class="screen hidden">
       <div class="run-bar">
         <div id="dots" class="dots" role="img" aria-label="Round results"></div>
-        <p id="streak" class="streak" aria-live="polite"></p>
+        <div class="run-right">
+          <p id="streak" class="streak" aria-live="polite"></p>
+          <button id="btn-contacts" class="contacts-toggle" type="button"
+            aria-expanded="false" aria-controls="contacts-panel">📇 Trusted contacts</button>
+        </div>
+      </div>
+
+      <!-- Opens in the page flow (pushes the message down), so it never covers the answer buttons -->
+      <div id="contacts-panel" class="card contacts contacts-panel hidden">
+        <p class="contacts-title">📇 Trusted contacts</p>
+        <div class="contacts-list"></div>
       </div>
 
       <p id="progress"></p>

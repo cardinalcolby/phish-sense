@@ -11,6 +11,14 @@ const MISSIONS = {
   hard: "Expert level. Some scams look perfect, and some real emails look scary. Read every detail before you decide.",
 };
 
+// The real addresses players check every message against.
+const TRUSTED = [
+  { name: "Bayline Energy", note: "your company", domain: "bayline-energy.com", phone: "(404) 555-0100" },
+  { name: "NewsNow", domain: "newsnow.com" },
+  { name: "ConnectPro", domain: "connectpro.com" },
+  { name: "TechHub", domain: "techhub.com" },
+];
+
 let mode, round, correct, current, seen;
 let results;  // one entry per round: true (correct) or false (wrong)
 let streak;   // correct answers in a row, resets on a wrong answer
@@ -91,6 +99,35 @@ async function apiLeaderboard() {
   return fetch("/api/leaderboard").then((r) => r.json());
 }
 
+// ---------- Trusted contacts ----------
+// One list, shown on the mission briefing and in the panel during play.
+function contactsHTML() {
+  const rows = TRUSTED.map((c) => `<tr>
+      <th scope="row">${esc(c.name)}${c.note ? `<small>${esc(c.note)}</small>` : ""}</th>
+      <td><span class="contact-domain">${esc(c.domain)}</span>${c.phone ? `<span class="contact-phone">${esc(c.phone)}</span>` : ""}</td>
+    </tr>`).join("");
+  return `<table class="contacts-table">
+      <thead><tr><th scope="col">Company</th><th scope="col">Real website &amp; phone</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="contacts-tip">Scammers use names you trust with addresses that don't match. Always compare.</p>`;
+}
+document.querySelectorAll(".contacts-list").forEach((el) => (el.innerHTML = contactsHTML()));
+
+function setContactsOpen(open) {
+  $("contacts-panel").classList.toggle("hidden", !open);
+  $("btn-contacts").setAttribute("aria-expanded", String(open));
+  $("btn-contacts").classList.toggle("open", open);
+}
+$("btn-contacts").addEventListener("click", () =>
+  setContactsOpen($("contacts-panel").classList.contains("hidden")));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("contacts-panel").classList.contains("hidden")) {
+    setContactsOpen(false);
+    $("btn-contacts").focus();
+  }
+});
+
 // ---------- Start: pick a difficulty, then see the mission ----------
 document.querySelectorAll(".mode").forEach((btn) =>
   btn.addEventListener("click", () => {
@@ -115,6 +152,7 @@ $("btn-start").addEventListener("click", () => {
   $("recap").classList.add("hidden");
   $("badge-reveal").classList.add("hidden");
   $("confetti").innerHTML = "";
+  setContactsOpen(false);
   show("play-screen");
   nextRound();
 });

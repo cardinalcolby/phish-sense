@@ -54,11 +54,20 @@ Real company email: @bayline-energy.com. Real company phone: (404) 555-0100.
 Write ONE ${channel} message. Difficulty: ${mode}. The correct answer must be: ${answer}.
 Difficulty guide: ${LEVELS[mode]}
 
+Trusted contacts (the player can see this list and checks every message against it):
+- Bayline Energy (the player's company): bayline-energy.com, phone (404) 555-0100
+- NewsNow: newsnow.com
+- ConnectPro: connectpro.com
+- TechHub: techhub.com
+
 Rules:
-- Only fictional companies, brands, and people. No real companies, banks, or government agencies.
+- Only these four companies may appear. No other company, brand, bank, or government agency names. People's names must be fictional.
+- Legit: the sender and any link must use the company's real domain exactly as listed (for example jordan.lee@bayline-energy.com or https://newsnow.com/...). Any phone number must be the real one from the list. Only Bayline Energy has a phone number, so a Legit sms must come from (404) 555-0100.
+- Phish: impersonate one of these four companies with a lookalike address, such as a different domain (connectpro-members.net), an extra word (techhub-support.com), or a subdomain trick (newsnow.com.alerts-center.net). Any phone number in a Phish must NOT be (404) 555-0100. The explanation must say what the real address is.
 - Phone numbers must look like (404) 555-01XX.
 - For sms, leave subject empty and use a phone number as the sender.
-- link is display text only (or empty). Use made-up domains.
+- link is display text only (or empty).
+- The examples below show the writing style only. Follow these company rules even if an example uses other names.
 - red_flags: short phrases separated by semicolons. Empty for Legit.
 - explanation: 1 to 2 plain sentences anyone can understand.
 
