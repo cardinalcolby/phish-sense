@@ -1,0 +1,5 @@
+Here is my conversation (https://claude.ai/chat/ab4d6209-91bd-4f11-8460-883488471914?artifact=42375153-a175-43ac-8b18-ddc9474a48fe) pull all of this into my current context. Then run /compact
+
+---
+
+Modify the field for "1. Enter your name" and update the placeholder value from "Your Name" to "Name"
