@@ -30,7 +30,7 @@ Phishing is one of the most common ways attackers get in, but most security trai
 
 ## No sign-up, on purpose
 
-Players just enter a name and play. We don't We don't collect emails, passwords, or any personal information. A security training app shouldn't create new data that needs protecting, and it means anyone can start learning in seconds.
+Players just enter a name and play. We don't collect emails, passwords, or any personal information. A security training app shouldn't create new data that needs protecting, and it means anyone can start learning in seconds.
 
 ## Safe by design
 
@@ -112,7 +112,7 @@ phish-sense/
 
 | Name | Role |
 |---|---|
-| Abigail | Team lead, game screens, pitch |
+| Abigail | Team lead, Frontend, game screens, pitch |
 | Bryan | Backend, Gemini, deployment |
 | Ismahan | Database setup |
 | Yusra | Leaderboard and data |
