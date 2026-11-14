@@ -28,6 +28,10 @@ const $ = (id) => document.getElementById(id);
 const show = (id) => {
   ["start-screen", "mission-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
   $(id).classList.remove("hidden");
+  // style.css uses this to pick the big header or the slim top bar,
+  // and to show the leaderboard only on the home and end screens.
+  document.body.dataset.screen = id;
+  window.scrollTo(0, 0);
 };
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -296,12 +300,15 @@ function hidePeek() {
 }
 
 // Always open ABOVE the link, so it never covers the Phish / Legit buttons
-// below the message. If the link is too close to the top of the screen,
-// scroll up just enough to make room.
+// below the message (one column). On wide screens the buttons sit to the
+// right of the message, so the popup also stays inside the message column.
+// If the link is too close to the top of the screen, scroll up to make room.
 function placePeek() {
   if (!peekFor || peek.hidden) return;
   if (!document.body.contains(peekFor)) return hidePeek();
   const gap = 8, edge = 12;
+  const column = $("message").getBoundingClientRect();
+  peek.style.maxWidth = `${Math.max(200, Math.min(360, column.width, window.innerWidth - 2 * edge))}px`;
   const w = peek.offsetWidth, h = peek.offsetHeight;
   let r = peekFor.getBoundingClientRect();
   const short = edge - (r.top - gap - h);
@@ -309,8 +316,9 @@ function placePeek() {
     window.scrollBy(0, -Math.min(short, window.scrollY));
     r = peekFor.getBoundingClientRect();
   }
+  const right = Math.min(window.innerWidth - edge, column.right);
   const top = Math.max(edge, r.top - gap - h);
-  const left = Math.min(Math.max(edge, r.left), window.innerWidth - w - edge);
+  const left = Math.min(Math.max(edge, r.left), right - w);
   peek.style.top = `${top}px`;
   peek.style.left = `${Math.max(edge, left)}px`;
 }
