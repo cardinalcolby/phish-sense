@@ -1,0 +1,46 @@
+<pasted_content id="fffc">
+Please add answer reactions to the PhishSense game. Only change files in public/ (index.html, style.css, app.js) and keep everything else working the same, including practice mode, the trusted contacts panel, the link inspect popup, and the existing api calls.
+
+Add these 4 reactions after the player answers, based on the real answer and their guess:
+
+1. Message is Phish, player clicked Legit (they fell for the scam):
+   - Show "🎣 You got hooked!"
+   - Animation: a fishing hook on a line drops from the top of the screen, catches the message card, and pulls it up and off the screen.
+   - After the animation, show the normal result card with the red flags and explanation.
+
+2. Message is Phish, player clicked Phish (they spotted the scam):
+   - Show "✅ You dodged the hook!"
+   - Animation: the hook swings down toward the card and misses, then reels back up.
+
+3. Message is Legit, player clicked Phish (false alarm):
+   - Show "🤔 Too cautious! This one was safe."
+   - No hook. Just a gentle, friendly style, not a harsh "wrong" style.
+
+4. Message is Legit, player clicked Legit (correct):
+   - Show "✅ Correct, this one's safe."
+   - No hook.
+
+Rules:
+- Draw the hook and line with CSS or inline SVG. No images or libraries.
+- Keep each animation short (about 1 to 1.5 seconds) so the game doesn't feel slow.
+- Disable the Phish and Legit buttons during the animation so they can't be double-clicked.
+- Respect prefers-reduced-motion: skip the animation and just show the message.
+- Make sure it looks good on a phone-sized screen.
+- Keep the existing scoring, streak counter, progress dots, badge reveal, and red flag recap working.
+- Don't use em dashes in any text shown to players.
+
+When you're done:
+1. Tell me how to test all 4 reactions.
+2. Show me the full final code for any changed files.
+3. Commit with the message "Add hooked and dodged answer animations" and push.
+</pasted_content id="fffc">
+
+---
+
+<task-notification>
+<task-id>b267u7h9l</task-id>
+<tool-use-id>toolu_01Q8rb89aN7GmZk5p5vZEfbd</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\a5452ee8-2383-418b-a32b-da2917fc1428\tasks\b267u7h9l.output</output-file>
+<status>failed</status>
+<summary>Background command "Serve the public folder locally" failed with exit code 49</summary>
+</task-notification>
