@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="370 70 460 480" width="460" height="480">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a1a33"/><stop offset="1" stop-color="#05253a"/>
+    </linearGradient>
+    <linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2de0c4"/><stop offset="1" stop-color="#1689c9"/>
+    </linearGradient>
+    <radialGradient id="innerG" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#123a5c"/><stop offset="1" stop-color="#0a1a33"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2de0c4" stop-opacity="0.2"/><stop offset="1" stop-color="#2de0c4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ribbonG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2de0c4"/><stop offset="1" stop-color="#17a9b5"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#cfe9f2"/><stop offset="0.5" stop-color="#ffffff"/><stop offset="1" stop-color="#9fc3d3"/>
+    </linearGradient>
+    <clipPath id="innerClip"><circle cx="600" cy="290" r="185"/></clipPath>
+  </defs>
+  
+  <g transform="translate(0 35)">
+
+
+  
+
+  <!-- main badge -->
+  <circle cx="600" cy="290" r="215" fill="url(#ringG)"/>
+  <circle cx="600" cy="290" r="185" fill="url(#innerG)"/>
+  <circle cx="600" cy="290" r="185" fill="none" stroke="#0a1a33" stroke-opacity="0.6" stroke-width="2"/>
+
+  <!-- fishing line from top -->
+  <line x1="640" y1="105" x2="640" y2="168" stroke="#e9fbf8" stroke-opacity="0.8" stroke-width="3"/>
+  <!-- hook (shank + bend) -->
+  <g transform="translate(640 0)">
+    <circle cx="0" cy="180" r="12" fill="none" stroke="url(#steel)" stroke-width="7"/>
+    <path d="M0 192 V330 C0 395 -95 395 -95 330 V250" fill="none" stroke="url(#steel)" stroke-width="13" stroke-linecap="butt"/>
+  </g>
+  <!-- email bait on the hook -->
+  <g transform="translate(545 300) rotate(-10)">
+    <rect x="-58" y="-38" width="116" height="76" rx="8" fill="#ffffff"/>
+    <path d="M-58 -32 L0 8 L58 -32" fill="none" stroke="#1689c9" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="50" cy="-36" r="17" fill="#ff5d6c"/>
+    <rect x="47" y="-47" width="6" height="14" rx="2" fill="#fff"/>
+    <circle cx="50" cy="-27" r="3" fill="#fff"/>
+  </g>
+  <!-- point + barb poking through the top of the email -->
+  <g transform="translate(640 0)">
+    <path d="M-101.5 262 V250" stroke="url(#steel)" stroke-width="13"/>
+    <path d="M-101.5 252 L-95 214 L-88.5 252 Z" fill="#ffffff"/>
+    <path d="M-89 246 L-70 266 L-89 262 Z" fill="#dff3f9"/>
+  </g>
+
+  <!-- level icons -->
+  <g>
+    <circle cx="470" cy="150" r="30" fill="#0a1a33" stroke="#4fc3b5" stroke-width="6"/>
+    <g transform="translate(470 150) scale(0.42)">
+      <path d="M-42 0 C-25 -26 22 -26 38 0 C22 26 -25 26 -42 0 Z" fill="#7fe0d0"/>
+      <path d="M36 0 L62 -20 L56 0 L62 20 Z" fill="#7fe0d0"/>
+      <circle cx="-22" cy="-5" r="6" fill="#0a1a33"/>
+    </g>
+    <circle cx="600" cy="92" r="34" fill="#0a1a33" stroke="#a9b8c8" stroke-width="6"/>
+    <g transform="translate(600 92) scale(0.42) translate(-120 -112)">
+      <line x1="72" y1="160" x2="158" y2="62" stroke="#f4e3c1" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="96" cy="140" r="14" fill="#cfd8e3"/>
+      <path d="M158 62 C170 90 166 115 160 132 L160 146 C160 156 148 156 147 147" fill="none" stroke="#e8f1fb" stroke-width="6" stroke-linecap="round"/>
+    </g>
+    <circle cx="730" cy="150" r="30" fill="#0a1a33" stroke="#ffd76a" stroke-width="6"/>
+    <g transform="translate(730 150) scale(0.36) translate(-120 -112)" fill="none" stroke="#fff3c4" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="120" cy="58" r="11"/><line x1="120" y1="69" x2="120" y2="166"/><line x1="96" y1="88" x2="144" y2="88"/>
+      <path d="M78 132 C82 158 100 168 120 168 C140 168 158 158 162 132"/>
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  
+  </g>
+</svg>

@@ -1,0 +1,71 @@
+/* PhishSense colors: navy + teal, matching the logo */
+:root {
+  --navy: #0a1a33;
+  --navy-2: #123a5c;
+  --teal: #2de0c4;
+  --text: #e9f1f7;
+  --muted: #9fb7c9;
+  --red: #ff5d6c;
+  --green: #3ddc84;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Inter", Arial, sans-serif;
+  background: var(--navy);
+  color: var(--text);
+}
+
+header { text-align: center; padding: 32px 16px 8px; }
+header h1 { margin: 0; font-size: 44px; font-weight: 800; }
+header h1 span { color: var(--teal); }
+.logo { width: 120px; height: auto; display: block; margin: 0 auto 8px; }
+.tagline { margin: 4px 0 0; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; font-size: 13px; }
+
+main { max-width: 640px; margin: 0 auto; padding: 16px; }
+.hidden { display: none !important; }
+
+.intro { text-align: center; line-height: 1.6; color: var(--muted); }
+.intro b { color: var(--text); }
+
+input {
+  display: block; width: 100%; margin: 16px 0; padding: 12px;
+  border-radius: 10px; border: 1px solid var(--navy-2);
+  background: var(--navy-2); color: var(--text); font-size: 16px;
+}
+
+button {
+  font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  border: none; border-radius: 10px; padding: 12px 18px;
+  background: var(--teal); color: var(--navy);
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.mode { padding: 18px 8px; background: var(--navy-2); color: var(--text); border: 2px solid var(--teal); }
+.mode small { color: var(--muted); font-weight: 400; }
+
+.card { background: var(--navy-2); border-radius: 14px; padding: 18px; margin: 16px 0; }
+.card.good { border-left: 6px solid var(--green); }
+.card.bad { border-left: 6px solid var(--red); }
+
+#progress { text-align: center; color: var(--muted); }
+.label { margin: 4px 0; color: var(--muted); }
+.label b { color: var(--text); }
+.body { margin-top: 14px; line-height: 1.5; }
+.bubble { background: #e9f1f7; color: var(--navy); padding: 12px 14px; border-radius: 16px 16px 16px 4px; line-height: 1.5; }
+.link { font-family: monospace; color: var(--teal); word-break: break-all; }
+.loading { color: var(--muted); text-align: center; }
+
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.answer.phish { background: var(--red); color: white; }
+.answer.legit { background: var(--green); color: var(--navy); }
+
+#btn-next, #btn-home { display: block; margin: 0 auto; }
+#end-screen { text-align: center; }
+
+.leaderboard h3 { margin-top: 0; }
+.leaderboard li { margin: 6px 0; }
+.leaderboard span { float: right; color: var(--muted); }
