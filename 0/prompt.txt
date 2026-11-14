@@ -1,0 +1,39 @@
+I'm working on PhishSense, a phishing-awareness game for a hackathon. I want to make the UI more impressive while keeping it simple, user friendly, and stable. Only change files in public/ (index.html, style.css, app.js). Do not change the backend, the API routes, or mock-data.js.
+
+Before you start:
+1. Run git pull so we have the latest changes from GitHub.
+2. Commit my current uncommitted work first with the message "Save mission screen, message styling, and practice mode fix", then push.
+
+Then add these 4 improvements:
+
+1. Feedback that feels alive
+- Correct answer: the message card glows green and a "+100" floats up and fades.
+- Wrong answer: the message card does a quick shake.
+- A streak counter on the play screen (for example "🔥 3 in a row") that resets on a wrong answer.
+- Progress dots at the top: 5 dots, one per round, that turn green (correct) or red (wrong) as the player goes.
+
+2. A real badge reveal
+- When the player earns a badge (4 of 5 correct), show the badge large on the end screen with a drop-in and spin animation and a short confetti burst (pure CSS/JS, no libraries).
+- Badges: Easy = 🐟 Minnow, Medium = 🎣 Angler, Hard = ⚓ Captain. If they now have all three, also show 🏆 PhishSense Master.
+- If they didn't pass, keep the friendly "try again" message.
+
+3. More realistic inbox and phone
+- Email: add a round avatar with the sender's first letter, a timestamp like "9:41 AM", and grayed-out (non-clickable) Reply and Forward buttons.
+- Text message: add a phone status bar at the top with a time, signal bars, and a battery icon.
+- Links must stay plain text and never be clickable.
+
+4. End-of-run recap
+- On the end screen, list "Red flags you missed this run," grouped with counts (for example "lookalike domain ×2"), built from the red_flags of the rounds the player got wrong. If they missed none, show "You caught every red flag!"
+
+Rules:
+- Plain HTML, CSS, and JavaScript only. No frameworks or libraries.
+- Keep the current navy and teal colors and the existing screen flow: home (name + difficulty) → mission briefing → play → end screen.
+- Keep practice mode working (the OFFLINE fallback to mock-data.js) and keep the existing api calls the same.
+- Respect prefers-reduced-motion (turn off animations for those users).
+- Make sure it still looks good on a phone-sized screen.
+- Don't use em dashes in any text shown to players.
+
+When you're done:
+1. Tell me how to test each feature.
+2. Show me the full final code for index.html, style.css, and app.js.
+3. Commit with the message "Add feedback animations, badge reveal, realistic inbox, and run recap" and push.
