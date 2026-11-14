@@ -3,19 +3,36 @@
 const ROUNDS = 5;        // rounds per mode
 const TO_PASS = 4;       // correct answers needed for the badge
 const BADGES = { easy: "🐟 Minnow", medium: "🎣 Angler", hard: "⚓ Captain" };
+const MISSIONS = {
+  easy: "Warm-up shift. These scams are obvious: watch for typos, surprise prizes, and ALL CAPS urgency.",
+  medium: "Scammers are getting smarter. Check every sender address and phone number against the real ones above.",
+  hard: "Expert level. Some scams look perfect, and some real emails look scary. Read every detail before you decide.",
+};
 
 let mode, round, correct, current, seen;
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
-  ["start-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
+  ["start-screen", "mission-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
   $(id).classList.remove("hidden");
 };
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // ---------- Talking to the backend ----------
-// If you open index.html directly (no server), the game uses mock-data.js instead.
-const OFFLINE = location.protocol === "file:";
+// Practice mode: if the backend isn't running (opened as a file, Live Server,
+// or a static host like Vercel), the game uses mock-data.js instead.
+let OFFLINE = location.protocol === "file:";
+
+async function checkBackend() {
+  if (OFFLINE) return;
+  try {
+    const r = await fetch("/api/leaderboard");
+    if (!r.ok) throw new Error("no backend");
+    await r.json();
+  } catch (e) {
+    OFFLINE = true;
+  }
+}
 
 async function apiGetScenario(mode, seen) {
   if (OFFLINE) {
@@ -66,21 +83,31 @@ async function apiLeaderboard() {
   return fetch("/api/leaderboard").then((r) => r.json());
 }
 
-// ---------- Start ----------
+// ---------- Start: pick a difficulty, then see the mission ----------
 document.querySelectorAll(".mode").forEach((btn) =>
   btn.addEventListener("click", () => {
     if (!$("username").value.trim()) return $("username").focus();
     mode = btn.dataset.mode;
-    round = 0;
-    correct = 0;
-    seen = [];
-    show("play-screen");
-    nextRound();
+    const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+    $("mission-mode").textContent = `${label} mode · ${BADGES[mode]} badge`;
+    $("mission-tip").textContent = MISSIONS[mode];
+    show("mission-screen");
   })
 );
 
+$("btn-back").addEventListener("click", () => show("start-screen"));
+
+$("btn-start").addEventListener("click", () => {
+  round = 0;
+  correct = 0;
+  seen = [];
+  show("play-screen");
+  nextRound();
+});
+
 // ---------- Play ----------
 async function nextRound() {
+  await ready;
   round++;
   $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
   $("result").classList.add("hidden");
@@ -154,7 +181,8 @@ async function loadLeaderboard() {
         const master = ["easy", "medium", "hard"].every((b) => p.badges.includes(b)) ? " 🏆" : "";
         return `<li><b>${esc(p.username)}</b> ${icons}${master} <span>${p.total_score} pts</span></li>`;
       }).join("")
-    : "<li>No scores yet. Be the first!</li>";
+    : '<li class="empty">No scores yet. Be the first!</li>';
 }
 
-loadLeaderboard();
+const ready = checkBackend();
+ready.then(loadLeaderboard);

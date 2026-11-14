@@ -27,11 +27,24 @@ header h1 span { color: var(--teal); }
 main { max-width: 640px; margin: 0 auto; padding: 16px; }
 .hidden { display: none !important; }
 
-.intro { text-align: center; line-height: 1.6; color: var(--muted); }
-.intro b { color: var(--text); }
+/* Start screen */
+.intro { text-align: center; color: var(--muted); margin: 4px 0 0; }
+.step-label { margin: 22px 0 8px; font-weight: 600; color: var(--text); }
+.step-label + input { margin-top: 0; }
+
+/* Mission screen */
+.briefing { margin-top: 8px; line-height: 1.6; color: var(--muted); }
+.briefing p { margin: 0 0 10px; }
+.briefing p:last-child { margin-bottom: 0; }
+.briefing b { color: var(--text); }
+.briefing-title { font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--teal) !important; }
+.mission-mode { font-size: 20px; font-weight: 800; color: var(--text); }
+.facts { padding: 10px 14px; border-left: 3px solid var(--teal); background: rgba(45, 224, 196, 0.08); border-radius: 6px; }
+.mission-buttons { display: flex; justify-content: space-between; gap: 12px; }
+button.secondary { background: transparent; color: var(--text); border: 2px solid var(--navy-2); }
 
 input {
-  display: block; width: 100%; margin: 16px 0; padding: 12px;
+  display: block; width: 100%; margin: 0; padding: 12px;
   border-radius: 10px; border: 1px solid var(--navy-2);
   background: var(--navy-2); color: var(--text); font-size: 16px;
 }
@@ -52,12 +65,46 @@ button:disabled { opacity: 0.5; cursor: default; }
 .card.bad { border-left: 6px solid var(--red); }
 
 #progress { text-align: center; color: var(--muted); }
-.label { margin: 4px 0; color: var(--muted); }
-.label b { color: var(--text); }
-.body { margin-top: 14px; line-height: 1.5; }
-.bubble { background: #e9f1f7; color: var(--navy); padding: 12px 14px; border-radius: 16px 16px 16px 4px; line-height: 1.5; }
-.link { font-family: monospace; color: var(--teal); word-break: break-all; }
 .loading { color: var(--muted); text-align: center; }
+
+/* ---------- Email: looks like an inbox message ---------- */
+#message.card { padding: 0; background: none; }
+.email {
+  background: #f7f9fb; color: #1b2a3a;
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.email::before {
+  content: "INBOX";
+  display: block; padding: 10px 18px;
+  background: #dfe7ee; color: #45566a;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+}
+.email .label { margin: 0; padding: 8px 18px; color: #5b6b7b; border-bottom: 1px solid #e3e9ef; }
+.email .label b { color: #1b2a3a; }
+.email .body { margin: 0; padding: 18px; line-height: 1.6; }
+
+/* ---------- Text message: looks like a phone ---------- */
+.sms {
+  width: 320px; margin: 0 auto; padding: 18px 16px 28px;
+  background: #101826; border: 3px solid #2b3a4f; border-radius: 36px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.sms::before {
+  content: ""; display: block; width: 90px; height: 6px;
+  margin: 0 auto 16px; background: #2b3a4f; border-radius: 3px;
+}
+.sms .label { text-align: center; font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+.sms .label b { display: block; font-size: 16px; color: var(--text); }
+.bubble {
+  background: #e9edf2; color: #1b2a3a;
+  padding: 12px 14px; border-radius: 18px 18px 18px 4px;
+  line-height: 1.5; margin: 0; max-width: 85%;
+}
+
+/* Links are shown as plain text on purpose: never clickable */
+.link { font-family: monospace; word-break: break-all; margin: 0; padding: 0 18px 18px; color: #0b7564; }
+.sms .link { padding: 10px 0 0; color: var(--teal); }
 
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .answer.phish { background: var(--red); color: white; }
@@ -69,3 +116,4 @@ button:disabled { opacity: 0.5; cursor: default; }
 .leaderboard h3 { margin-top: 0; }
 .leaderboard li { margin: 6px 0; }
 .leaderboard span { float: right; color: var(--muted); }
+.leaderboard .empty { color: var(--muted); list-style: none; margin-left: -20px; }

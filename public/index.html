@@ -18,19 +18,37 @@
   <main>
     <!-- Screen 1: Start -->
     <section id="start-screen" class="screen">
-      <p class="intro">You work at <b>Bayline Energy</b>.<br />
-        Company email: <b>@bayline-energy.com</b> · Main line: <b>(404) 555-0100</b><br />
-        Sort your inbox: <b>Phish</b> or <b>Legit</b>?</p>
+      <p class="intro">Spot the scams before they hook you.</p>
+
+      <p class="step-label">1. Enter your name</p>
       <input id="username" placeholder="Your name" maxlength="20" />
+
+      <p class="step-label">2. Choose your difficulty</p>
       <div class="modes">
         <button class="mode" data-mode="easy">🐟 Easy<br /><small>Minnow badge</small></button>
         <button class="mode" data-mode="medium">🎣 Medium<br /><small>Angler badge</small></button>
         <button class="mode" data-mode="hard">⚓ Hard<br /><small>Captain badge</small></button>
       </div>
-      <div id="my-badges"></div>
     </section>
 
-    <!-- Screen 2: Play -->
+    <!-- Screen 2: Mission briefing (after choosing a difficulty) -->
+    <section id="mission-screen" class="screen hidden">
+      <div class="card briefing">
+        <p class="briefing-title">📋 Your mission</p>
+        <p id="mission-mode" class="mission-mode"></p>
+        <p>You work at <b>Bayline Energy</b>. Scammers are targeting your inbox.</p>
+        <p class="facts">Real company email: <b>@bayline-energy.com</b><br />
+          Real main line: <b>(404) 555-0100</b></p>
+        <p id="mission-tip"></p>
+        <p>Sort each message: <b>Phish</b> or <b>Legit</b>? Get 4 of 5 right to earn the badge.</p>
+      </div>
+      <div class="mission-buttons">
+        <button id="btn-back" class="secondary">← Change difficulty</button>
+        <button id="btn-start">Start mission</button>
+      </div>
+    </section>
+
+    <!-- Screen 3: Play -->
     <section id="play-screen" class="screen hidden">
       <p id="progress"></p>
       <div id="message" class="card"></div>
@@ -42,7 +60,7 @@
       <button id="btn-next" class="hidden">Next</button>
     </section>
 
-    <!-- Screen 3: End of run -->
+    <!-- Screen 4: End of run -->
     <section id="end-screen" class="screen hidden">
       <h2 id="end-title"></h2>
       <p id="end-text"></p>
