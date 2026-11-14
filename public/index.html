@@ -50,8 +50,18 @@
 
     <!-- Screen 3: Play -->
     <section id="play-screen" class="screen hidden">
+      <div class="run-bar">
+        <div id="dots" class="dots" role="img" aria-label="Round results"></div>
+        <p id="streak" class="streak" aria-live="polite"></p>
+      </div>
+
       <p id="progress"></p>
-      <div id="message" class="card"></div>
+
+      <div class="message-wrap">
+        <div id="message" class="card"></div>
+        <div id="pop-layer" class="pop-layer" aria-hidden="true"></div>
+      </div>
+
       <div class="answers">
         <button id="btn-phish" class="answer phish">🎣 Phish</button>
         <button id="btn-legit" class="answer legit">✅ Legit</button>
@@ -62,8 +72,18 @@
 
     <!-- Screen 4: End of run -->
     <section id="end-screen" class="screen hidden">
+      <div id="badge-reveal" class="badge-reveal hidden">
+        <div id="confetti" class="confetti" aria-hidden="true"></div>
+        <div id="badge-art" class="badge-art" aria-hidden="true"></div>
+        <p id="badge-name" class="badge-name"></p>
+        <p id="badge-master" class="badge-master hidden"></p>
+      </div>
+
       <h2 id="end-title"></h2>
       <p id="end-text"></p>
+
+      <div id="recap" class="card recap hidden"></div>
+
       <button id="btn-home">Back to modes</button>
     </section>
 
