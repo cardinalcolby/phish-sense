@@ -148,6 +148,7 @@ async function nextRound() {
   $("btn-phish").disabled = $("btn-legit").disabled = true;
   $("message").className = "card";   // clears the glow or shake from the last round
   $("pop-layer").innerHTML = "";
+  hidePeek();
   renderDots();
   renderStreak();
   $("message").innerHTML = `<p class="loading">Loading message...</p>`;
@@ -173,9 +174,140 @@ const initialOf = (sender) => {
   return m ? m[0].toUpperCase() : "?";
 };
 
+// ---------- Hover to inspect links ----------
+// Emails hide the real address behind friendly text, the way real phishing
+// does. Hovering (or tapping) shows where the link really goes. The link is a
+// plain button, so it can never open anything.
+const LINK_LABELS = [
+  [/\.exe|download|update/i, "Download the update"],
+  [/claim|winner|prize|reward/i, "Claim your reward"],
+  [/sign-?in|log-?in/i, "Sign in to your account"],
+  [/verify/i, "Verify your account"],
+  [/confirm/i, "Confirm now"],
+  [/billing|invoice|payment/i, "View billing details"],
+  [/video|watch/i, "Watch now"],
+  [/story|news|article/i, "Read the full story"],
+];
+
+function parseLink(raw) {
+  const text = String(raw || "").trim();
+  try {
+    const u = new URL(/^[a-z]+:\/\//i.test(text) ? text : `http://${text}`);
+    const host = u.hostname;
+    const parts = host.split(".");
+    const domain = parts.length > 2 ? parts.slice(-2).join(".") : host;
+    return {
+      scheme: `${u.protocol}//`,
+      sub: host.slice(0, host.length - domain.length), // e.g. "newsnow.com."
+      domain,                                          // the site you really land on
+      rest: u.pathname === "/" && !u.search ? "" : u.pathname + u.search,
+    };
+  } catch (e) {
+    return { scheme: "", sub: "", domain: text, rest: "" };
+  }
+}
+
+function linkLabel(s) {
+  if (s.link_text) return s.link_text;
+  const { rest } = parseLink(s.link);
+  const hit = LINK_LABELS.find(([re]) => re.test(rest)) || LINK_LABELS.find(([re]) => re.test(s.link));
+  return hit ? hit[1] : "Open link";
+}
+
+function renderLink(s) {
+  if (!s.link) return "";
+  const hint = `<span class="link-hint"><span class="hint-hover">Hover</span><span class="hint-tap">Tap</span> to inspect</span>`;
+  if (s.channel === "sms") {
+    // Texts show the raw address, but tapping it still previews the real site.
+    return `<p class="link"><button type="button" class="link-chip" data-href="${esc(s.link)}">${esc(s.link)}</button>${hint}</p>`;
+  }
+  return `<p class="link"><button type="button" class="link-chip" data-href="${esc(s.link)}">🔗 ${esc(linkLabel(s))}</button>${hint}</p>`;
+}
+
+const peek = document.createElement("div");
+peek.id = "link-peek";
+peek.className = "link-peek";
+peek.setAttribute("role", "tooltip");
+peek.hidden = true;
+document.body.appendChild(peek);
+
+let peekFor = null;     // the link the popup belongs to
+let peekPinned = false; // true after a tap or click, so it stays open
+
+function showPeek(chip) {
+  const p = parseLink(chip.dataset.href);
+  peek.innerHTML = `
+    <p class="peek-title">🔍 This link really goes to:</p>
+    <p class="peek-url">${esc(p.scheme)}${p.sub ? `<span class="peek-sub">${esc(p.sub)}</span>` : ""}<b class="peek-domain">${esc(p.domain)}</b>${esc(p.rest)}</p>
+    <p class="peek-tip">The real site is the last part of the address, right before the first /</p>`;
+  peek.hidden = false;
+  if (peekFor && peekFor !== chip) peekFor.removeAttribute("aria-describedby");
+  peekFor = chip;
+  chip.setAttribute("aria-describedby", "link-peek");
+  placePeek();
+}
+
+function hidePeek() {
+  peek.hidden = true;
+  peekPinned = false;
+  if (peekFor) peekFor.removeAttribute("aria-describedby");
+  peekFor = null;
+}
+
+// Always open ABOVE the link, so it never covers the Phish / Legit buttons
+// below the message. If the link is too close to the top of the screen,
+// scroll up just enough to make room.
+function placePeek() {
+  if (!peekFor || peek.hidden) return;
+  if (!document.body.contains(peekFor)) return hidePeek();
+  const gap = 8, edge = 12;
+  const w = peek.offsetWidth, h = peek.offsetHeight;
+  let r = peekFor.getBoundingClientRect();
+  const short = edge - (r.top - gap - h);
+  if (short > 0 && window.scrollY > 0) {
+    window.scrollBy(0, -Math.min(short, window.scrollY));
+    r = peekFor.getBoundingClientRect();
+  }
+  const top = Math.max(edge, r.top - gap - h);
+  const left = Math.min(Math.max(edge, r.left), window.innerWidth - w - edge);
+  peek.style.top = `${top}px`;
+  peek.style.left = `${Math.max(edge, left)}px`;
+}
+
+const chipFrom = (e) => e.target.closest?.(".link-chip");
+
+document.addEventListener("mouseover", (e) => {
+  const chip = chipFrom(e);
+  if (chip && !peekPinned) showPeek(chip);
+});
+document.addEventListener("mouseout", (e) => {
+  const chip = chipFrom(e);
+  if (chip && !peekPinned && !chip.contains(e.relatedTarget)) hidePeek();
+});
+document.addEventListener("focusin", (e) => {
+  const chip = chipFrom(e);
+  if (chip) showPeek(chip);
+});
+document.addEventListener("focusout", (e) => {
+  if (chipFrom(e) && !peekPinned) hidePeek();
+});
+document.addEventListener("click", (e) => {
+  const chip = chipFrom(e);
+  if (chip) {
+    e.preventDefault();
+    if (peekPinned && peekFor === chip) return hidePeek();
+    showPeek(chip);
+    peekPinned = true;
+  } else if (peekPinned && !peek.contains(e.target)) {
+    hidePeek();
+  }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePeek(); });
+window.addEventListener("scroll", placePeek, { passive: true });
+window.addEventListener("resize", placePeek);
+
 function renderMessage(s) {
-  // Links are shown as plain text on purpose: never clickable.
-  const link = s.link ? `<p class="link">🔗 ${esc(s.link)}</p>` : "";
+  const link = renderLink(s);
   const clock = clockFor(s);
 
   if (s.channel === "sms") {
@@ -244,9 +376,12 @@ async function answer(guess) {
   const flags = r.red_flags
     ? `<p><b>Red flags:</b></p><ul>${flagList(r.red_flags).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`
     : "";
+  const went = current.link
+    ? `<p class="link-reveal">🔍 That link really went to <b>${esc(parseLink(current.link).domain)}</b></p>`
+    : "";
   $("result").innerHTML = `
     <h3>${r.correct ? "✅ Correct!" : "❌ Not quite."} This one was <b>${r.game_answer}</b>.</h3>
-    ${flags}<p>${esc(r.explanation)}</p>`;
+    ${flags}<p>${esc(r.explanation)}</p>${went}`;
   $("result").className = `card ${r.correct ? "good" : "bad"}`;
   $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
   $("btn-next").textContent = round < ROUNDS ? "Next" : "See results";

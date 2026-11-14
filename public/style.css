@@ -203,9 +203,57 @@ button:disabled { opacity: 0.5; cursor: default; }
   line-height: 1.5; margin: 0; max-width: 85%;
 }
 
-/* Links are shown as plain text on purpose: never clickable */
-.link { font-family: monospace; word-break: break-all; margin: 0; padding: 0 18px 18px; color: #0b7564; }
-.sms .link { padding: 10px 0 0; color: var(--teal); }
+/* Links are buttons on purpose: they only preview, never open anything */
+.link {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin: 0; padding: 0 18px 18px;
+}
+.link-chip,
+.link-chip:hover {
+  font: inherit; font-weight: 600; text-align: left;
+  padding: 0; margin: 0; border: 0; border-radius: 3px;
+  background: none; color: #1a5fd0;
+  text-decoration: underline; text-underline-offset: 3px;
+  cursor: help; transform: none; box-shadow: none;
+  overflow-wrap: anywhere;
+}
+.link-chip:focus-visible { outline: 2px solid #1a5fd0; outline-offset: 3px; }
+.link-hint {
+  font-size: 12px; font-weight: 600; color: #7b8a99;
+  padding: 2px 8px; border-radius: 999px; background: #e7edf2;
+}
+.hint-tap { display: none; }
+@media (hover: none) {
+  .hint-hover { display: none; }
+  .hint-tap { display: inline; }
+}
+.sms .link { padding: 10px 0 0; }
+.sms .link-chip { font-family: monospace; font-weight: 400; color: var(--teal); }
+.sms .link-chip:focus-visible { outline-color: var(--teal); }
+.sms .link-hint { background: #1d2a3d; color: var(--muted); }
+
+/* The popup that shows a link's real destination */
+.link-peek {
+  position: fixed; z-index: 1000;
+  width: max-content; max-width: min(360px, calc(100vw - 24px));
+  padding: 10px 12px; border-radius: 10px;
+  background: #0d1b2e; color: var(--text);
+  border: 1px solid #2b3a4f;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  font-size: 13px; line-height: 1.45;
+  animation: peek-in 0.12s ease-out;
+}
+.link-peek p { margin: 0; }
+.peek-title { color: var(--muted); font-weight: 600; margin-bottom: 4px !important; }
+.peek-url { font-family: monospace; font-size: 14px; overflow-wrap: anywhere; color: #c9d6e2; }
+.peek-sub { color: inherit; }
+.peek-domain { color: #ffd166; background: rgba(255, 209, 102, 0.12); padding: 0 2px; border-radius: 3px; }
+.peek-tip { margin-top: 6px !important; color: var(--muted); font-size: 12px; }
+.peek-tip b { color: var(--text); }
+@keyframes peek-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+.link-reveal { margin-bottom: 0; }
 
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .answer.phish { background: var(--red); color: white; }
