@@ -1,0 +1,43 @@
+<pasted_content id="c7bf">
+The game requires too much scrolling during play. Please redesign the layout to fit on one laptop screen without scrolling. Only change files in public/ and keep every feature working (practice mode, trusted contacts, link inspect popup, hook animations, reactions, dots, streak, badge reveal, recap, fish cursor).
+
+1. Header:
+   - Home screen: keep the big centered logo, title, and tagline.
+   - Mission, play, and end screens: replace it with a slim top bar. Left side: small logo (about 36px) + "PhishSense" text. Right side: progress dots, the round counter ("EASY · Round 1 of 5 · 0 correct"), the streak, and the Trusted contacts button.
+
+2. Play screen on screens wider than 900px: use two columns.
+   - Left column (about 60%): the email or text message.
+   - Right column (about 40%): the Phish and Legit buttons at the top. After answering, show the reaction banner, the result card (red flags, explanation, link reveal), and the Next button in this same column, under the buttons.
+   - Make the page container wider (about 1100px max) so both columns fit.
+   - The whole round should fit on a 1366x768 laptop screen without scrolling.
+
+3. Leaderboard: show it only on the home screen and the end screen, not during play.
+
+4. Phones and narrow screens (under 900px): keep one column in this order: message, buttons, reaction, result, Next. Keep the slim top bar.
+
+5. Make sure the hook animations still line up with the message card in the new layout, and the link inspect popup still never covers the Phish and Legit buttons.
+
+Don't use em dashes in any text shown to players.
+
+When you're done: tell me how to test it on a laptop and a phone-sized screen, and commit with the message "Two-column play layout and slim header" and push to the same branch.
+</pasted_content id="c7bf">
+
+---
+
+<task-notification>
+<task-id>b1enjwr4h</task-id>
+<tool-use-id>toolu_01TGc2ZZTCGZbRSV4MsESBPm</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\a5452ee8-2383-418b-a32b-da2917fc1428\tasks\b1enjwr4h.output</output-file>
+<status>failed</status>
+<summary>Background command "Serve the public folder on port 5174" failed with exit code 127</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bxz9m249k</task-id>
+<tool-use-id>toolu_014EjkBiYt9cRJJUWr5PZ3C3</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\a5452ee8-2383-418b-a32b-da2917fc1428\tasks\bxz9m249k.output</output-file>
+<status>failed</status>
+<summary>Background command "Serve public folder with Node on port 5174" failed with exit code 127</summary>
+</task-notification>

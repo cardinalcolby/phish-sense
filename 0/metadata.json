@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "01M7E78B6G4CM9B26WD457TVDD",
+  "session_id": "4f9e944d-d15e-436b-8c0d-718d6506329d",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-14T23:46:06.6634117Z",
+  "branch": "Abigail_Front_End_Work",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "public/app.js",
+    "public/index.html",
+    "public/style.css"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "cea43bdc3044",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 136305,
+    "cache_read_tokens": 1525308,
+    "output_tokens": 22590,
+    "api_call_count": 17
+  },
+  "session_token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 136305,
+    "cache_read_tokens": 1525308,
+    "output_tokens": 22590,
+    "api_call_count": 17
+  },
+  "redaction": {
+    "replacements": 0,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 0,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}
