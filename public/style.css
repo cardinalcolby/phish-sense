@@ -677,14 +677,47 @@ body { overflow-x: clip; }
   100% { opacity: 0;    transform: translate(-4px, -110vh); }
 }
 
-/* Phones and narrow windows: waves only, no side bubbles */
-@media (max-width: 899.98px) {
-  .bg-bubble { display: none; }
+/* Fish schools: faint blue-gray (not teal, so they never look like the fish cursor).
+   Home screen only: display: none on other screens removes them, and coming back restarts the swim. */
+.fish-defs { position: absolute; }
+.fish-school {
+  position: absolute; left: 0; width: 150px;
+  fill: var(--muted); opacity: 0.12;
+  animation: school-swim-right 34s linear infinite;
+}
+.fish-school svg { display: block; width: 100%; height: auto; animation: school-bob 5s ease-in-out infinite alternate; }
+.school-right { bottom: 14vh; animation-delay: -8s; }
+.school-left  { bottom: 8vh; width: 130px; animation-name: school-swim-left; animation-duration: 27s; animation-delay: -20s; }
+.school-left svg { transform: scaleX(-1); animation-name: school-bob-flipped; animation-duration: 6s; }
+body:not([data-screen="start-screen"]) .fish-school { display: none; }
+
+@keyframes school-swim-right {
+  from { transform: translateX(-180px); }
+  to   { transform: translateX(calc(100vw + 30px)); }
+}
+@keyframes school-swim-left {
+  from { transform: translateX(calc(100vw + 30px)); }
+  to   { transform: translateX(-180px); }
+}
+@keyframes school-bob {
+  from { transform: translateY(-4px); }
+  to   { transform: translateY(4px); }
+}
+@keyframes school-bob-flipped {
+  from { transform: scaleX(-1) translateY(-4px); }
+  to   { transform: scaleX(-1) translateY(4px); }
 }
 
-/* Reduced motion: waves stay, but hold still; bubbles are hidden */
+/* Phones and narrow windows: waves only, no side bubbles or fish */
+@media (max-width: 899.98px) {
+  .bg-bubble, .fish-school { display: none; }
+}
+
+/* Reduced motion: waves and fish stay, but hold still; bubbles are hidden */
 @media (prefers-reduced-motion: reduce) {
-  .wave { animation: none !important; }
+  .wave, .fish-school, .fish-school svg { animation: none !important; }
+  .school-right { transform: translateX(8vw); }
+  .school-left  { transform: translateX(calc(92vw - 130px)); }
   .bg-bubble { display: none; }
 }
 

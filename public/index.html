@@ -24,6 +24,30 @@
     <svg class="wave wave-front" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
       <path d="M0 140 C180 115 540 115 720 140 C900 165 1260 165 1440 140 C1620 115 1980 115 2160 140 C2340 165 2700 165 2880 140 V200 H0 Z" />
     </svg>
+    <!-- Two faint fish schools, home screen only (hidden by CSS on every other screen) -->
+    <svg width="0" height="0" class="fish-defs" focusable="false">
+      <symbol id="bg-fish" viewBox="-5 0 20 10">
+        <polygon points="3,5 -5,0.5 -5,9.5" />
+        <ellipse cx="9" cy="5" rx="8" ry="4" />
+      </symbol>
+    </svg>
+    <div class="fish-school school-right">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="18" width="20" height="10" />
+        <use href="#bg-fish" x="26" y="6" width="16" height="8" />
+        <use href="#bg-fish" x="34" y="30" width="18" height="9" />
+        <use href="#bg-fish" x="58" y="16" width="14" height="7" />
+      </svg>
+    </div>
+    <div class="fish-school school-left">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="10" width="16" height="8" />
+        <use href="#bg-fish" x="18" y="28" width="20" height="10" />
+        <use href="#bg-fish" x="44" y="4" width="14" height="7" />
+        <use href="#bg-fish" x="50" y="22" width="18" height="9" />
+        <use href="#bg-fish" x="74" y="36" width="12" height="6" />
+      </svg>
+    </div>
     <span class="bg-bubble b1"></span>
     <span class="bg-bubble b2"></span>
     <span class="bg-bubble b3"></span>
