@@ -83,7 +83,7 @@ The full app also works without a Gemini key. It just uses the backup scenarios.
 | `GET /api/scenario?mode=easy` | Returns a message (Gemini first, backup if needed). Never includes the answer. |
 | `POST /api/answer` | `{ scenario_id, guess }` returns whether it was right, the red flags, and the explanation. |
 | `POST /api/score` | `{ username, points, badge }` saves a finished run. |
-| `GET /api/leaderboard` | Top 10 players. |
+| `GET /api/leaderboard` | Top 50 players. |
 
 ## Project files
 

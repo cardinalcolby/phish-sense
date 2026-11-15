@@ -7,6 +7,13 @@
   --muted: #9fb7c9;
   --red: #ff5d6c;
   --green: #3ddc84;
+  /* Difficulty colors: buttons, badge icons, mission title */
+  --easy: #4ade80;     /* Minnow */
+  --medium: #facc15;   /* Angler */
+  --hard: #f87171;     /* Captain */
+  --easy-tint: rgba(74, 222, 128, 0.14);
+  --medium-tint: rgba(250, 204, 21, 0.14);
+  --hard-tint: rgba(248, 113, 113, 0.14);
   --fit-h: none; /* set on large screens: the height a screen must fit in */
 }
 
@@ -19,7 +26,7 @@
 body {
   margin: 0;
   font-family: "Inter", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;   /* 16px; grows a little on very wide screens (see below) */
   line-height: normal;
   background: var(--navy);
   color: var(--text);
@@ -34,11 +41,11 @@ small { font-size: smaller; }
 
 /* ---------- Headers ---------- */
 /* Big centered header on the home screen */
-.hero { text-align: center; padding: 32px 16px 8px; }
-.hero h1 { margin: 0; font-size: 44px; font-weight: 800; }
+.hero { text-align: center; padding: 32px 16px 18px; }
+.hero h1 { margin: 0; font-size: 55px; font-weight: 800; line-height: 1.1; }
 .hero h1 span { color: var(--teal); }
-.logo { width: 120px; height: auto; display: block; margin: 0 auto 8px; }
-.tagline { margin: 4px 0 0; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; font-size: 13px; }
+.logo { width: 156px; height: auto; display: block; margin: 0 auto 8px; }
+.tagline { margin: 6px 0 0; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; font-size: 13px; }
 
 /* Slim top bar on every other screen */
 .topbar { display: none; border-bottom: 1px solid rgba(159, 183, 201, 0.15); background: #0c1f3b; }
@@ -58,30 +65,114 @@ body:not([data-screen="start-screen"]) .topbar { display: block; }
 body[data-screen="play-screen"] .run-status,
 body[data-screen="end-screen"] .run-status { display: flex; }
 body[data-screen="end-screen"] .streak,
-body[data-screen="end-screen"] .contacts-toggle { display: none; }
+body[data-screen="end-screen"] .run-tools { display: none; }
+/* Mission screen: the bar shows only the "?" (replay tutorial); other screens hide the "?" */
+body[data-screen="mission-screen"] .run-status { display: flex; }
+body[data-screen="mission-screen"] .run-info,
+body[data-screen="mission-screen"] .streak,
+body[data-screen="mission-screen"] .contacts-toggle,
+body:not([data-screen="mission-screen"]) .help-toggle { display: none; }
 .run-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .round-counter { margin: 0; font-size: 14px; color: var(--muted); white-space: nowrap; }
 
 /* ---------- Page ---------- */
 main { padding-top: 16px; padding-bottom: 16px; }
 body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap under the top bar */
+body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to make room for the big Start mission boat */
 .hidden { display: none !important; }
 
-/* Home: one centered column */
-.home-col { max-width: 800px; }
+/* Home: one column on phones (name + modes, Masters, Leaderboard).
+   900px and up: Leaderboard | name + modes | Masters. The side columns share one width,
+   so the middle stays centered, and they sit in one grid row, so both cards start at the
+   same top edge and stretch to the same height. */
+.home-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.home-center { order: 1; min-width: 0; }
+.home-masters { order: 2; }
+.home-board { order: 3; }
+.home-grid > .ps-card { margin: 0; min-width: 0; display: flex; flex-direction: column; }
+@media (min-width: 900px) {
+  /* About 25% / 50% / 25% */
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+  .home-board { order: 1; }
+  .home-center { order: 2; }
+  .home-masters { order: 3; }
 
-/* Mission: two cards side by side on large screens, same height */
-#mission-screen { max-width: 1040px; margin-left: auto; margin-right: auto; }
-#mission-screen .ps-card { margin: 0; height: 100%; }
+  /* The home screen fills the window: the header and the three columns form one group,
+     centered vertically in the space above the waves (main's bottom padding keeps that
+     space clear). The center content sits in the middle of its column, and its gaps and
+     buttons grow a little on taller screens. */
+  body[data-screen="start-screen"] {
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  body[data-screen="start-screen"] .hero { padding-top: 16px; }
+  body[data-screen="start-screen"] main {
+    flex: 0 0 auto; width: 100%;
+    padding-bottom: max(16px, 9vh);   /* stop at the top of the waves */
+  }
+  .home-center { display: flex; flex-direction: column; justify-content: center; }
+  .hero .intro { font-size: 1.1rem; }
+  .home-center .step-label { margin-top: clamp(14px, calc(7vh - 26px), 64px); }
+  .home-grid .lb-row { margin: clamp(7px, calc(2vh - 8px), 16px) 0; }
+  .home-center input { padding: 16px 18px; font-size: 1.2rem; }
+  button.mode { min-height: clamp(112px, 12vh, 132px); font-size: 1.2rem; }
+  .mode .badge-icon { width: 1.6em; height: 1.6em; vertical-align: -0.45em; }
+  .mode small { font-size: 0.8em; }
+  .home-center .master-goal { margin-top: clamp(14px, calc(6vh - 20px), 56px); }
+}
+/* Wide screens: the home screen uses a little more width */
+@media (min-width: 1400px) {
+  body[data-screen="start-screen"] main.container { max-width: 1320px; }
+}
+
+/* Mission: two cards side by side on large screens, same height.
+   Uses the full container width, so its edges line up with the play screen and the logo. */
+#mission-screen .ps-card { margin: 0; }
+/* Cards fill their column (flex, not height: 100%, so a tutorial tip placed
+   under a card grows the column instead of spilling into the next row) */
+#mission-screen > .col-lg-7, #mission-screen > .col-lg-5 { display: flex; flex-direction: column; }
+#mission-screen .briefing, #mission-screen .contacts { flex: 1 1 auto; }
 
 /* Scroll areas inside cards get a dark scrollbar that matches the theme */
 .ps-card, .email .body, .sms .bubble { scrollbar-width: thin; scrollbar-color: #3a6185 transparent; }
 
 /* Start screen */
-.intro { text-align: center; color: var(--muted); margin: 4px 0 0; }
-.step-label { margin: 22px 0 8px; font-weight: 600; color: var(--text); }
+.intro { text-align: center; color: var(--muted); margin: 10px 0 0; }
+.step-label { margin: 22px 0 8px; font-weight: 600; font-size: 1.05rem; color: var(--text); }
 .step-label + input { margin-top: 0; }
-#start-screen .leaderboard { margin-top: 24px; }
+/* Leaderboard and Masters rows: rank (or trophy) | name + badge icons | points.
+   Names never wrap; a long one ends in "…" so the points stay on the same line. */
+.leaderboard-list, .masters-list { list-style: none; padding: 0; margin: 0; }
+.lb-row { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 7px 0; }
+.lb-rank { color: var(--muted); font-weight: 700; text-align: right; }
+.lb-who { display: flex; align-items: center; gap: 0; min-width: 0; white-space: nowrap; }
+.lb-name { overflow: hidden; text-overflow: ellipsis; margin-right: 4px; }
+.lb-who .lb-badge { flex-shrink: 0; display: inline-flex; }
+.lb-row .lb-score { color: var(--muted); white-space: nowrap; text-align: right; }
+.leaderboard-list .empty, .masters-list .empty { color: var(--muted); }
+/* A long Masters list scrolls inside its card instead of making the side cards taller */
+.masters-list { max-height: 15em; overflow-y: auto; padding-right: 6px; }
+
+/* Masters: players who earned all three badges. The list starts right under the heading. */
+.masters { border: 2px solid var(--medium); }
+.masters h3 { margin-top: 0; }
+.masters-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+.masters-join { margin: 8px 0 0; text-align: center; color: var(--muted); font-style: italic; opacity: 0.85; }
+
+/* "Earn all 3 badges" note, centered under the difficulty buttons */
+.master-goal { margin: 18px 0 0; text-align: center; color: var(--muted); font-weight: 600; font-size: 1.05rem; }
+.master-shimmer {
+  font-weight: 800;
+  background: linear-gradient(100deg, var(--medium) 0%, var(--medium) 40%, #fff8d6 50%, var(--medium) 60%, var(--medium) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: master-shimmer 2.6s linear infinite;
+}
+@keyframes master-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -150% 0; }
+}
 
 /* Mission screen */
 .briefing { margin-top: 0; line-height: 1.6; color: var(--muted); }
@@ -90,25 +181,77 @@ body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap unde
 .briefing b { color: var(--text); }
 .briefing-title { font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--teal) !important; }
 .mission-mode { font-size: 20px; font-weight: 800; color: var(--text); }
+.mission-mode.tier-easy, .mission-mode.tier-medium, .mission-mode.tier-hard { color: var(--tier); }
 .facts { padding: 10px 14px; border-left: 3px solid var(--teal); background: rgba(45, 224, 196, 0.08); border-radius: 6px; }
-.mission-buttons { display: flex; justify-content: space-between; gap: 12px; }
+.mission-buttons { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 button.secondary { background: transparent; color: var(--text); border: 2px solid var(--navy-2); }
 
 input {
   display: block; width: 100%; margin: 0; padding: 12px;
   border-radius: 10px; border: 1px solid var(--navy-2);
-  background: var(--navy-2); color: var(--text); font-size: 16px;
+  background: var(--navy-2); color: var(--text); font-size: 1rem;
 }
 
 button {
-  font-family: inherit; font-size: 16px; font-weight: 600; line-height: normal; cursor: pointer;
+  font-family: inherit; font-size: 1rem; font-weight: 600; line-height: normal; cursor: pointer;
   border: none; border-radius: 10px; padding: 12px 18px;
   background: var(--teal); color: var(--navy);
 }
 button:disabled { opacity: 0.5; cursor: default; }
 
+/* Start mission is a little fishing boat that blinks a teal glow to draw the eye.
+   The button itself is see-through: ::before is the hull, ::after the cabin
+   and mast. The glow is a drop-shadow so it follows the boat's outline
+   instead of a rectangle. It's big, so the mission screen's gaps are trimmed
+   (see "Mission screen" below) to keep everything on one screen; the mast
+   tip pokes a little above the button into the gap. */
+#btn-start {
+  position: relative; isolation: isolate;
+  min-width: 300px; padding: 30px 64px 12px; border-radius: 0;
+  font-size: 1.35rem; font-weight: 800; letter-spacing: 0.5px;
+  background: transparent; color: var(--navy);
+  animation: start-blink 1.4s ease-in-out infinite;
+}
+#btn-start::before { /* hull, with a darker stripe at the waterline */
+  content: ""; position: absolute; inset: 20px 0 0 0; z-index: -1;
+  background: linear-gradient(var(--teal) 82%, #1fa892 82%);
+  clip-path: polygon(0 6%, 100% 0, 89% 100%, 8% 100%);
+}
+#btn-start::after { /* cabin with a porthole (left) and the mast (right) */
+  content: ""; position: absolute; left: 24%; bottom: calc(100% - 20px);
+  width: 40%; max-width: 140px; height: 30px;
+  background:
+    radial-gradient(circle, var(--navy-2) 3.5px, transparent 4.5px) no-repeat left calc(27% - 6px) bottom 2px / 12px 12px,
+    linear-gradient(var(--text), var(--text)) no-repeat right 20% bottom / 4px 30px,
+    linear-gradient(var(--text), var(--text)) no-repeat left bottom / 55% 16px;
+}
+#btn-start:hover, #btn-start:focus-visible { animation: none; filter: brightness(1.1) drop-shadow(0 0 10px rgba(45, 224, 196, 0.6)); }
+@keyframes start-blink {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(45, 224, 196, 0)); }
+  50% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(45, 224, 196, 0.85)); }
+}
+
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.mode { padding: 18px 8px; background: var(--navy-2); color: var(--text); border: 2px solid var(--teal); }
+/* Each difficulty sets --tier; anything tagged with it (icons, the mission title) uses that color */
+.tier-easy { --tier: var(--easy); --tier-tint: var(--easy-tint); }
+.tier-medium { --tier: var(--medium); --tier-tint: var(--medium-tint); }
+.tier-hard { --tier: var(--hard); --tier-tint: var(--hard-tint); }
+.tier-easy, .tier-medium, .tier-hard { color: var(--tier); }
+
+/* Badge icon: sized to the text around it, drawn in currentColor */
+.badge-icon { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.3em; }
+.badge-label { white-space: nowrap; }
+
+/* Difficulty buttons: colored border, light tint on hover, text stays white on the dark card */
+button.mode {
+  padding: 18px 8px; background: var(--navy-2); color: var(--text); border: 2px solid var(--tier);
+  transition: background-color 0.15s ease;
+}
+button.mode:hover, button.mode:focus-visible {
+  background: linear-gradient(var(--tier-tint), var(--tier-tint)) var(--navy-2);
+}
+button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px; }
+.mode .badge-icon { width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 .mode small { color: var(--muted); font-weight: 400; }
 
 /* Our card style (named ps-card so Bootstrap's .card doesn't restyle it) */
@@ -165,19 +308,30 @@ button:disabled { opacity: 0.5; cursor: default; }
   .end-side { display: flex; flex-direction: column; gap: 16px; max-height: var(--fit-h); }
   .end-side > .ps-card { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
   .end-side > .leaderboard { flex-shrink: 0; max-height: 45%; }   /* the recap gives up room first */
-  .end-main { padding-top: 8px; }
+  .end-side > .recap { flex-grow: 1; }   /* fills spare height so both columns end together */
+  .end-main { display: flex; }   /* the card fills the column, which matches the right column's height */
+  .end-card { flex: 1 1 auto; }
+}
+
+/* Very wide screens: text grows from 16px (at 1600px) to 18px (at 2000px and up).
+   Everything sized in rem/em follows; phones and laptops keep 16px. */
+@media (min-width: 1601px) {
+  html { font-size: clamp(16px, calc(8px + 0.5vw), 18px); }
 }
 
 /* Shorter laptop screens: a smaller home header so the home screen fits too */
 @media (min-width: 992px) and (max-height: 800px) {
-  .hero { padding-top: 18px; }
-  .logo { width: 90px; margin-bottom: 4px; }
+  .hero { padding-top: 18px; padding-bottom: 14px; }
+  .hero h1 { font-size: 48px; }
+  .logo { width: 117px; margin-bottom: 4px; }
 }
 
 /* ---------- Run status: progress dots + streak ---------- */
 .dots { display: flex; gap: 8px; }
 .dot {
-  width: 14px; height: 14px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; line-height: 1; color: var(--navy);
   background: transparent; border: 2px solid #2b4a68;
   transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
@@ -214,6 +368,117 @@ button:disabled { opacity: 0.5; cursor: default; }
 .contact-domain, .contact-phone { display: block; font-family: monospace; font-size: 14px; color: var(--teal); overflow-wrap: anywhere; }
 .contact-phone { color: var(--text); }
 .contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+/* ---------- Tutorial (see "Tutorial" in app.js) ---------- */
+/* Example inbox on the mission briefing: kept compact so Start mission stays close */
+.practice.ps-card { padding: 14px 16px; }
+.practice-title {
+  margin: 0 0 10px; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.practice-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.practice-side { display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 992px) {
+  .practice-body { grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+}
+.sample-message .email::before { padding: 6px 14px; font-size: 11px; }
+.sample-message .email-head { padding: 10px 14px; }
+.sample-message .avatar { width: 34px; height: 34px; font-size: 15px; }
+.sample-message .email .body { padding: 10px 14px; font-size: 15px; line-height: 1.5; }
+.sample-message .link { padding: 0 14px 12px; }
+.sample-message .email-actions { display: none; }   /* Reply / Forward aren't part of the lesson */
+/* The example Phish / Legit are pictures of the buttons, not buttons */
+.sample-answers .answer {
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px; border-radius: 10px; font-weight: 600; cursor: default;
+}
+.sample-progress { display: flex; align-items: center; gap: 10px; }
+.sample-progress-label { font-size: 13px; color: var(--muted); }
+/* Example dots match the in-game ones, just without the pop animation */
+.sample-dots .dot { animation: none; }
+.sample-dots .dot.current { transform: none; }
+.practice-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+.run-tools { display: flex; align-items: center; gap: 8px; }
+/* "?" button next to Trusted contacts: same outline pill look, as a circle */
+.help-toggle {
+  width: 32px; height: 32px; padding: 0; border-radius: 50%;
+  font-size: 14px; font-weight: 800; line-height: 1;
+  background: transparent; color: var(--teal); border: 2px solid var(--navy-2);
+}
+.help-toggle:hover, .help-toggle.open { border-color: var(--teal); }
+.help-toggle.open { background: rgba(45, 224, 196, 0.12); }
+
+/* The callout: a small card with a teal edge and an arrow pointing at its target.
+   It floats in open space next to the target (data-side says which side it's on).
+   When there's no open space, it sits in the page flow under the target
+   (.tut-inline) and pushes the content below it down instead of covering it. */
+.tutorial {
+  position: fixed; z-index: 1100; left: 0; top: 0;
+  width: min(300px, calc(100vw - 24px));
+  padding: 14px 16px; border-radius: 14px;
+  background: var(--navy-2); color: var(--text);
+  border: 2px solid var(--teal);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  text-align: left;
+  animation: tut-in 0.18s ease-out;
+}
+.tutorial.tut-inline {
+  position: relative; left: auto; top: auto; z-index: 5;
+  width: auto; max-width: 360px; margin: 14px 12px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+/* Under the sender line, inside the email header (app.js may widen it sideways) */
+.email-who > .tutorial.tut-inline { margin: 10px 0 8px; }
+/* Right under the link, on its own line before the "Hover to inspect" hint */
+.link > .tutorial.tut-inline { flex: 1 0 100%; max-width: none; margin: 6px 0 4px; }
+/* In the play column the grid rules set the width; just keep the gap */
+#play-screen .play-side > .tutorial.tut-inline { max-width: none; }
+.tutorial p { margin: 0; }
+.tut-count {
+  margin-bottom: 6px !important; font-size: 12px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.tut-text { font-size: 15px; line-height: 1.45; }
+.tut-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.tut-skip {
+  padding: 4px 0; background: none; color: var(--muted);
+  font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.tut-skip:hover { color: var(--text); }
+.tut-ok { padding: 8px 18px; font-size: 14px; }
+.tut-skip:focus-visible, .tut-ok:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* The arrow is a turned square with two teal edges; the corner they share points at the target */
+.tut-arrow {
+  position: absolute; width: 14px; height: 14px;
+  background: var(--navy-2); border: 2px solid var(--teal);
+}
+.tutorial[data-side="below"] .tut-arrow,
+.tutorial[data-side="above"] .tut-arrow { left: var(--arrow-x, 50%); transform: translateX(-50%) rotate(45deg); }
+.tutorial[data-side="left"] .tut-arrow,
+.tutorial[data-side="right"] .tut-arrow { top: var(--arrow-y, 50%); transform: translateY(-50%) rotate(45deg); }
+.tutorial[data-side="below"] .tut-arrow { top: -9px; border-right: 0; border-bottom: 0; }   /* points up */
+.tutorial[data-side="above"] .tut-arrow { bottom: -9px; border-left: 0; border-top: 0; }   /* points down */
+.tutorial[data-side="right"] .tut-arrow { left: -9px; border-top: 0; border-right: 0; }     /* points left */
+.tutorial[data-side="left"] .tut-arrow { right: -9px; border-bottom: 0; border-left: 0; }   /* points right */
+@keyframes tut-in {
+  from { opacity: 0; }
+}
+
+/* Tight ring around the thing the callout points at.
+   The sender line and contact name shrink to their text, so the ring fits them. */
+.email-who .from { width: fit-content; max-width: 100%; }
+.sms .label b { width: fit-content; max-width: 100%; margin: 0 auto; }
+.tut-target { outline: 2px solid var(--teal) !important; outline-offset: 2px; border-radius: 4px; }
+.answers.tut-target { outline-offset: 4px; border-radius: 12px; }
+.ps-card.tut-target { outline-offset: 3px; border-radius: 14px; }   /* keep the card's own corners */
+.help-toggle.tut-target { border-radius: 50%; }
+.dots.tut-target { outline-offset: 4px; border-radius: 999px; }
+/* The message body fills the email edge to edge, so its ring sits inside */
+.email .body.tut-target, .sms .bubble.tut-target { outline-offset: -2px; }
+.sms .bubble.tut-target { border-radius: 18px 18px 18px 4px; }
+.sms .label b.tut-target { outline-offset: 1px; }   /* keeps clear of "Text message from" above */
 
 /* ---------- Message area: glow, shake, floating score ---------- */
 .message-wrap { position: relative; }
@@ -453,18 +718,29 @@ body { overflow-x: clip; }
 #end-screen .end-side { text-align: left; }
 #end-screen .end-side .ps-card { margin: 0; }
 #end-screen .end-side .ps-card + .ps-card { margin-top: 16px; }
-.end-main h2 { margin-top: 0.5em; }
+
+/* Left card: badge (or hook), score, message, Back to modes, centered vertically */
+#end-screen .end-card {
+  margin: 0; padding: 24px 20px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.end-card h2 { margin: 0.5em 0 0; }
+.end-card #end-text { margin: 10px 0 20px; color: var(--muted); }
 
 /* ---------- Badge reveal ---------- */
 .badge-reveal { position: relative; padding: 10px 0 2px; }
 .badge-art {
   font-size: 96px; line-height: 1.1;
+  display: flex; justify-content: center;
   animation: badge-drop 1.1s cubic-bezier(0.2, 0.75, 0.3, 1) both;
 }
+.badge-name:empty { display: none; }
 .badge-name {
   margin: 2px 0 0; font-size: 26px; font-weight: 800; color: var(--teal);
   animation: fade-rise 0.5s ease-out 0.75s both;
 }
+.badge-art .badge-icon { width: 1em; height: 1em; margin: 0; vertical-align: 0; }
+.badge-name.tier-easy, .badge-name.tier-medium, .badge-name.tier-hard { color: var(--tier); }
 .badge-master {
   display: inline-block; margin: 14px 0 0; padding: 8px 16px;
   border: 2px solid var(--teal); border-radius: 999px;
@@ -505,9 +781,7 @@ body { overflow-x: clip; }
 .recap .clean { margin: 0; font-weight: 600; color: var(--green); }
 
 .leaderboard h3 { margin-top: 0; }
-.leaderboard li { margin: 6px 0; }
-.leaderboard span { float: right; color: var(--muted); }
-.leaderboard .empty { color: var(--muted); list-style: none; margin-left: -20px; }
+.leaderboard .lb-badge .badge-icon { margin: 0 0 0 0.1em; }
 
 /* ---------- Phones: top bar on two neat lines ----------
    Line 1: logo + name on the left, Trusted contacts on the right.
@@ -520,10 +794,11 @@ body { overflow-x: clip; }
     gap: 6px 8px; padding-top: 6px; padding-bottom: 8px; min-height: 0;
   }
   body[data-screen="play-screen"] .run-status,
+  body[data-screen="mission-screen"] .run-status,
   body[data-screen="end-screen"] .run-status { display: contents; }
   .brand { grid-area: brand; }
   .streak { grid-area: streak; justify-self: end; }
-  .contacts-toggle { grid-area: contacts; }
+  .run-tools { grid-area: contacts; gap: 6px; }
   .run-info { grid-area: info; gap: 6px 12px; }
   .label-long { display: none; }
   .label-short { display: inline; }
@@ -545,10 +820,12 @@ body { overflow-x: clip; }
   .mission-buttons { flex-direction: column; }
   .mission-buttons button { width: 100%; }
 
-  .dot { width: 12px; height: 12px; }
+  .dot { width: 18px; height: 18px; font-size: 11px; }
   .streak { font-size: 13px; }
   .dots { gap: 6px; }
   .contacts-toggle { font-size: 12px; padding: 5px 9px; }
+  .help-toggle { width: 28px; height: 28px; font-size: 13px; }
+  .tut-text { font-size: 14px; }
   .contacts-table { font-size: 13px; }
   .pop-score { font-size: 34px; }
   .reaction { font-size: 17px; padding: 10px 12px; }
@@ -581,6 +858,103 @@ body { overflow-x: clip; }
   .dot.correct, .dot.wrong { animation: none; }
   .reaction { animation: none; }
   .hook-rig { display: none; }
+}
+
+/* ---------- Ocean background: waves + side bubbles ----------
+   Fixed behind all content (z-index -1 sits above the page color but under everything else),
+   and pointer-events: none so it never blocks clicks or the fish cursor. */
+.ocean-bg {
+  position: fixed; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+}
+.wave {
+  position: absolute; left: 0; bottom: 0;
+  width: 200%; height: 18vh; min-height: 90px;
+  display: block;
+  animation: wave-roll linear infinite;
+  will-change: transform;
+}
+.wave-back  { fill: var(--teal);   opacity: 0.08; animation-duration: 30s; }
+.wave-mid   { fill: var(--navy-2); opacity: 0.15; animation-duration: 22s; animation-direction: reverse; height: 15vh; min-height: 75px; }
+.wave-front { fill: var(--teal);   opacity: 0.1;  animation-duration: 16s; height: 12vh; min-height: 60px; }
+/* Each wave is two identical periods wide: sliding by half its width lands on an identical frame */
+@keyframes wave-roll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.bg-bubble {
+  position: absolute; bottom: -24px;
+  width: var(--size); height: var(--size); border-radius: 50%;
+  border: 1.5px solid rgba(45, 224, 196, 0.5);
+  background: radial-gradient(circle at 30% 30%, rgba(233, 241, 247, 0.5), rgba(45, 224, 196, 0.1) 65%);
+  opacity: 0;
+  animation: bg-bubble-rise var(--dur) linear var(--delay) infinite;
+}
+/* Left edge */
+.bg-bubble.b1 { left: 1.5vw; --size: 10px; --dur: 19s; --delay: -2s; }
+.bg-bubble.b2 { left: 3.5vw; --size: 6px;  --dur: 24s; --delay: -11s; }
+.bg-bubble.b3 { left: 2vw;   --size: 14px; --dur: 28s; --delay: -19s; }
+/* Right edge */
+.bg-bubble.b4 { right: 2vw;   --size: 8px;  --dur: 21s; --delay: -6s; }
+.bg-bubble.b5 { right: 3.5vw; --size: 12px; --dur: 26s; --delay: -15s; }
+.bg-bubble.b6 { right: 1.5vw; --size: 6px;  --dur: 18s; --delay: -9s; }
+@keyframes bg-bubble-rise {
+  0%   { opacity: 0;    transform: translate(0, 0); }
+  10%  { opacity: 0.14; }
+  50%  { transform: translate(6px, -55vh); }
+  85%  { opacity: 0.14; }
+  100% { opacity: 0;    transform: translate(-4px, -110vh); }
+}
+
+/* Fish schools: faint blue-gray (not teal, so they never look like the fish cursor).
+   Home screen only: display: none on other screens removes them, and coming back restarts the swim. */
+.fish-defs { position: absolute; }
+/* Each school crosses the whole screen at its own height (--y), speed, and direction.
+   The inner .school-drift moves softly up and down, so the path is gently wavy. */
+.fish-school {
+  position: absolute; left: 0; top: var(--y); width: 140px;
+  fill: var(--muted); opacity: 0.12;
+  animation: school-swim-right var(--swim) linear var(--start) infinite;
+}
+.fish-school.swim-left { animation-name: school-swim-left; }
+.fish-school.swim-left svg { transform: scaleX(-1); }   /* face the way they swim */
+.fish-school svg { display: block; width: 100%; height: auto; }
+.school-drift { animation: school-drift var(--drift) ease-in-out infinite alternate; }
+
+.school-1 { --y: 12vh; --swim: 38s; --start: -6s;  --drift: 7s; }
+.school-2 { --y: 40vh; --swim: 29s; --start: -18s; --drift: 6s; width: 130px; }
+.school-3 { --y: 66vh; --swim: 44s; --start: -30s; --drift: 9s; width: 110px; opacity: 0.1; }
+.school-4 { --y: 82vh; --swim: 33s; --start: -12s; --drift: 8s; width: 120px; }
+body:not([data-screen="start-screen"]) .fish-school { display: none; }
+
+@keyframes school-swim-right {
+  from { transform: translateX(-180px); }
+  to   { transform: translateX(calc(100vw + 30px)); }
+}
+@keyframes school-swim-left {
+  from { transform: translateX(calc(100vw + 30px)); }
+  to   { transform: translateX(-180px); }
+}
+@keyframes school-drift {
+  from { transform: translateY(-18px); }
+  to   { transform: translateY(18px); }
+}
+
+/* Phones and narrow windows: waves only, no side bubbles or fish */
+@media (max-width: 899.98px) {
+  .bg-bubble, .fish-school { display: none; }
+}
+
+/* Reduced motion: waves and fish stay, but hold still; bubbles are hidden */
+@media (prefers-reduced-motion: reduce) {
+  .wave, .fish-school, .school-drift { animation: none !important; }
+  /* Still fish rest near the side edges, away from the centered content */
+  .school-1 { transform: translateX(2vw); }
+  .school-2 { transform: translateX(calc(98vw - 130px)); }
+  .school-3 { transform: translateX(calc(97vw - 110px)); }
+  .school-4 { transform: translateX(3vw); }
+  .bg-bubble { display: none; }
 }
 
 /* ---------- Fish cursor (home screen only, see fish-cursor.js) ---------- */

@@ -159,7 +159,7 @@ app.post("/api/score", async (req, res) => {
 app.get("/api/leaderboard", async (req, res) => {
   const { rows } = await db.query(
     `SELECT username, total_score, badges FROM scores
-      ORDER BY cardinality(badges) DESC, total_score DESC LIMIT 10`
+      ORDER BY cardinality(badges) DESC, total_score DESC LIMIT 50`
   );
   res.json(rows);
 });

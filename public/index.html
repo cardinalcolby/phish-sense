@@ -12,11 +12,73 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-screen="start-screen">
+  <!-- Decorative ocean background: fixed behind everything, never takes clicks.
+       Each wave is two identical periods wide and slides left by one period, so the loop has no jump. -->
+  <div class="ocean-bg" aria-hidden="true">
+    <svg class="wave wave-back" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 90 C240 40 480 40 720 90 C960 140 1200 140 1440 90 C1680 40 1920 40 2160 90 C2400 140 2640 140 2880 90 V200 H0 Z" />
+    </svg>
+    <svg class="wave wave-mid" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 110 C120 80 240 80 360 110 C480 140 600 140 720 110 C840 80 960 80 1080 110 C1200 140 1320 140 1440 110 C1560 80 1680 80 1800 110 C1920 140 2040 140 2160 110 C2280 80 2400 80 2520 110 C2640 140 2760 140 2880 110 V200 H0 Z" />
+    </svg>
+    <svg class="wave wave-front" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 140 C180 115 540 115 720 140 C900 165 1260 165 1440 140 C1620 115 1980 115 2160 140 C2340 165 2700 165 2880 140 V200 H0 Z" />
+    </svg>
+    <!-- Two faint fish schools, home screen only (hidden by CSS on every other screen) -->
+    <svg width="0" height="0" class="fish-defs" focusable="false">
+      <symbol id="bg-fish" viewBox="-5 0 20 10">
+        <polygon points="3,5 -5,0.5 -5,9.5" />
+        <ellipse cx="9" cy="5" rx="8" ry="4" />
+      </symbol>
+    </svg>
+    <!-- Outer div crosses the screen, inner div drifts up and down for a wavy path.
+         ocean-bg.js gives each school a new random height every time it starts a new pass. -->
+    <div class="fish-school school-1 swim-right"><div class="school-drift">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="18" width="20" height="10" />
+        <use href="#bg-fish" x="26" y="6" width="16" height="8" />
+        <use href="#bg-fish" x="34" y="30" width="18" height="9" />
+        <use href="#bg-fish" x="58" y="16" width="14" height="7" />
+      </svg>
+    </div></div>
+    <div class="fish-school school-2 swim-left"><div class="school-drift">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="10" width="16" height="8" />
+        <use href="#bg-fish" x="18" y="28" width="20" height="10" />
+        <use href="#bg-fish" x="44" y="4" width="14" height="7" />
+        <use href="#bg-fish" x="50" y="22" width="18" height="9" />
+        <use href="#bg-fish" x="74" y="36" width="12" height="6" />
+      </svg>
+    </div></div>
+    <div class="fish-school school-3 swim-left"><div class="school-drift">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="20" width="18" height="9" />
+        <use href="#bg-fish" x="24" y="8" width="14" height="7" />
+        <use href="#bg-fish" x="30" y="30" width="16" height="8" />
+      </svg>
+    </div></div>
+    <div class="fish-school school-4 swim-right"><div class="school-drift">
+      <svg viewBox="0 0 120 50" focusable="false">
+        <use href="#bg-fish" x="0" y="24" width="14" height="7" />
+        <use href="#bg-fish" x="16" y="8" width="18" height="9" />
+        <use href="#bg-fish" x="38" y="22" width="16" height="8" />
+        <use href="#bg-fish" x="60" y="10" width="12" height="6" />
+      </svg>
+    </div></div>
+    <span class="bg-bubble b1"></span>
+    <span class="bg-bubble b2"></span>
+    <span class="bg-bubble b3"></span>
+    <span class="bg-bubble b4"></span>
+    <span class="bg-bubble b5"></span>
+    <span class="bg-bubble b6"></span>
+  </div>
+
   <!-- Big header: home screen only -->
   <header class="hero">
     <img src="logo-badge.svg" alt="PhishSense logo" class="logo" />
     <h1>Phish<span>Sense</span></h1>
     <p class="tagline">Don't get hooked.</p>
+    <p class="intro">Spot the scams before they hook you.</p>
   </header>
 
   <!-- Slim top bar: mission, play, and end screens -->
@@ -32,38 +94,53 @@
           <p id="progress" class="round-counter"></p>
         </div>
         <p id="streak" class="streak" aria-live="polite"></p>
-        <button id="btn-contacts" class="contacts-toggle" type="button" aria-label="Trusted contacts"
-          aria-expanded="false" aria-controls="contacts-panel">📇 <span class="label-long">Trusted contacts</span><span class="label-short">Contacts</span></button>
+        <div class="run-tools">
+          <button id="btn-contacts" class="contacts-toggle" type="button" aria-label="Trusted contacts"
+            aria-expanded="false" aria-controls="contacts-panel">📇 <span class="label-long">Trusted contacts</span><span class="label-short">Contacts</span></button>
+          <!-- Mission screen only: replays the tutorial -->
+          <button id="btn-tutorial" class="help-toggle" type="button" aria-label="Replay tutorial" title="Replay tutorial">?</button>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="container">
     <!-- Screen 1: Start -->
-    <section id="start-screen" class="screen row g-3 justify-content-center">
-      <div class="col-12 home-col">
-        <p class="intro">Spot the scams before they hook you.</p>
-
+    <!-- 900px and up: Leaderboard | name + modes | Masters (side columns equal width and height).
+         Narrower: name + modes, then Masters, then Leaderboard. -->
+    <section id="start-screen" class="screen home-grid">
+      <div class="home-center">
         <p class="step-label">1. Enter your name</p>
         <input id="username" placeholder="Name" maxlength="20" />
 
         <p class="step-label">2. Choose your difficulty</p>
         <div class="modes">
-          <button class="mode" data-mode="easy">🐟 Easy<br /><small>Minnow badge</small></button>
-          <button class="mode" data-mode="medium">🎣 Medium<br /><small>Angler badge</small></button>
-          <button class="mode" data-mode="hard">⚓ Hard<br /><small>Captain badge</small></button>
+          <button class="mode tier-easy" data-mode="easy"><span data-badge-icon="easy"></span>Easy<br /><small>Minnow badge</small></button>
+          <button class="mode tier-medium" data-mode="medium"><span data-badge-icon="medium"></span>Medium<br /><small>Angler badge</small></button>
+          <button class="mode tier-hard" data-mode="hard"><span data-badge-icon="hard"></span>Hard<br /><small>Captain badge</small></button>
         </div>
 
-        <section class="ps-card leaderboard">
-          <h3>🏆 Leaderboard</h3>
-          <ol class="leaderboard-list"></ol>
-        </section>
+        <p class="master-goal"><span aria-hidden="true">🏆</span> Earn all 3 badges to <span class="master-shimmer">become a PhishSense Master</span></p>
       </div>
+
+      <section class="ps-card leaderboard home-board">
+        <h3>Leaderboard</h3>
+        <ol class="leaderboard-list"></ol>
+      </section>
+
+      <section class="ps-card masters home-masters">
+        <h3><span aria-hidden="true">🏆</span> <span class="master-shimmer">PhishSense Masters</span></h3>
+        <!-- The list starts right under the heading; with only 1 or 2 Masters, a soft "Can you join the crew?" follows -->
+        <div class="masters-body">
+          <ul class="masters-list"></ul>
+          <p class="masters-join hidden">Can you join the crew?</p>
+        </div>
+      </section>
     </section>
 
     <!-- Screen 2: Mission briefing (after choosing a difficulty) -->
     <!-- Large screens: briefing and contacts side by side. Phones: stacked. -->
-    <section id="mission-screen" class="screen row g-3 g-lg-4 justify-content-center hidden">
+    <section id="mission-screen" class="screen row g-3 justify-content-center hidden">
       <div class="col-12 col-lg-7">
         <div class="ps-card briefing">
           <p class="briefing-title">📋 Your mission</p>
@@ -79,6 +156,28 @@
         <div class="ps-card contacts">
           <p class="contacts-title">📇 Trusted contacts</p>
           <div class="contacts-list"></div>
+        </div>
+      </div>
+      <!-- Tutorial: a compact example inbox the tips point at (see "Tutorial" in app.js) -->
+      <div class="col-12">
+        <div class="ps-card practice">
+          <p class="practice-title">👀 How to check a message</p>
+          <div class="practice-body">
+            <div id="sample-message" class="sample-message"></div>
+            <div class="practice-side" aria-hidden="true">
+              <div id="sample-answers" class="answers sample-answers">
+                <span class="answer phish">🎣 Phish</span>
+                <span class="answer legit">✅ Legit</span>
+              </div>
+              <div class="sample-progress">
+                <div id="sample-dots" class="dots sample-dots">
+                  <span class="dot correct">✓</span><span class="dot wrong">✗</span><span class="dot current"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <span class="sample-progress-label">Your progress</span>
+              </div>
+              <p class="practice-note">Just an example. Your real messages start when you begin the mission.</p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="col-12">
@@ -109,8 +208,8 @@
         </div>
 
         <div class="answers">
-          <button id="btn-phish" class="answer phish">🎣 Phish</button>
-          <button id="btn-legit" class="answer legit">✅ Legit</button>
+          <button id="btn-phish" class="answer phish" aria-keyshortcuts="ArrowLeft" title="Shortcut: ←">🎣 Phish</button>
+          <button id="btn-legit" class="answer legit" aria-keyshortcuts="ArrowRight" title="Shortcut: →">✅ Legit</button>
         </div>
 
         <!-- Reaction to the answer: hooked, dodged, too cautious, or safe -->
@@ -123,19 +222,21 @@
 
     <!-- Screen 4: End of run
          Large screens: badge on the left, recap and leaderboard on the right. -->
-    <section id="end-screen" class="screen row g-3 g-lg-4 justify-content-center align-items-start hidden">
+    <section id="end-screen" class="screen row g-3 g-lg-4 justify-content-center hidden">
       <div class="col-12 col-lg-5 end-main">
-        <div id="badge-reveal" class="badge-reveal hidden">
-          <div id="confetti" class="confetti" aria-hidden="true"></div>
-          <div id="badge-art" class="badge-art" aria-hidden="true"></div>
-          <p id="badge-name" class="badge-name"></p>
-          <p id="badge-master" class="badge-master hidden"></p>
+        <div class="ps-card end-card">
+          <div id="badge-reveal" class="badge-reveal">
+            <div id="confetti" class="confetti" aria-hidden="true"></div>
+            <div id="badge-art" class="badge-art" aria-hidden="true"></div>
+            <p id="badge-name" class="badge-name"></p>
+            <p id="badge-master" class="badge-master hidden"></p>
+          </div>
+
+          <h2 id="end-title"></h2>
+          <p id="end-text"></p>
+
+          <button id="btn-home">Back to modes</button>
         </div>
-
-        <h2 id="end-title"></h2>
-        <p id="end-text"></p>
-
-        <button id="btn-home">Back to modes</button>
       </div>
 
       <div class="col-12 col-lg-7 end-side">
@@ -152,5 +253,6 @@
   <script src="mock-data.js"></script>
   <script src="app.js"></script>
   <script src="fish-cursor.js"></script>
+  <script src="ocean-bg.js"></script>
 </body>
 </html>

@@ -3,8 +3,35 @@
 const ROUNDS = 5;        // rounds per mode
 const TO_PASS = 4;       // correct answers needed for the badge
 const PER_CORRECT = 100; // points per correct answer
-const BADGES = { easy: "🐟 Minnow", medium: "🎣 Angler", hard: "⚓ Captain" };
+const BADGES = { easy: "Minnow", medium: "Angler", hard: "Captain" };
 const ALL_MODES = ["easy", "medium", "hard"];
+
+// Badge icons: simple inline SVGs drawn in currentColor, so each one takes
+// its difficulty color from CSS (.tier-easy green, .tier-medium yellow, .tier-hard red).
+const BADGE_SVG = {
+  // Minnow: a small fish
+  easy: `<ellipse cx="13.5" cy="12" rx="7.5" ry="4.8" fill="currentColor"/>
+    <path d="M7 12 1.5 7v10z" fill="currentColor"/>
+    <circle cx="17" cy="10.8" r="1.1" fill="#0a1a33"/>`,
+  // Angler: a fishing rod with its line and hook
+  medium: `<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 21 19 3" stroke-width="2.4"/>
+    <circle cx="7" cy="16.5" r="2.2" stroke-width="2"/>
+    <path d="M19 3v11.5" stroke-width="1.3"/>
+    <path d="M19 14.5v2.3a2.2 2.2 0 0 1-4.4 0v-.8" stroke-width="2"/></g>`,
+  // Captain: an anchor
+  hard: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="4.6" r="2.2"/>
+    <path d="M12 6.8V21M8 10h8M4.5 13.5c0 4.3 3.2 7.5 7.5 7.5s7.5-3.2 7.5-7.5"/>
+    <path d="M2.5 15.5l2-2 2 2M17.5 15.5l2-2 2 2"/></g>`,
+};
+const badgeIcon = (m) =>
+  `<svg class="badge-icon tier-${m}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${BADGE_SVG[m]}</svg>`;
+// Icon + name, e.g. for "You earned [fish] Minnow!"
+const badgeLabel = (m) => `<span class="badge-label tier-${m}">${badgeIcon(m)}${BADGES[m]}</span>`;
+
+// Fill every placeholder like <span data-badge-icon="easy"> (the difficulty buttons)
+document.querySelectorAll("[data-badge-icon]").forEach((el) => (el.innerHTML = badgeIcon(el.dataset.badgeIcon)));
 const MISSIONS = {
   easy: "Warm-up shift. These scams are obvious: watch for typos, surprise prizes, and ALL CAPS urgency.",
   medium: "Scammers are getting smarter. Check every sender address and phone number against the real ones above.",
@@ -26,6 +53,7 @@ let missed;   // every red flag from the rounds the player got wrong
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
+  endTutorial();   // closing it this way doesn't count as seen
   ["start-screen", "mission-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
   $(id).classList.remove("hidden");
   // style.css uses this to pick the big header or the slim top bar,
@@ -98,7 +126,7 @@ async function apiLeaderboard() {
     try { board = JSON.parse(localStorage.getItem("ps-board") || "{}"); } catch (e) {}
     return Object.values(board)
       .sort((a, b) => b.badges.length - a.badges.length || b.total_score - a.total_score)
-      .slice(0, 10);
+      .slice(0, 50);   // same cap as the server
   }
   return fetch("/api/leaderboard").then((r) => r.json());
 }
@@ -122,6 +150,7 @@ function setContactsOpen(open) {
   $("contacts-panel").classList.toggle("hidden", !open);
   $("btn-contacts").setAttribute("aria-expanded", String(open));
   $("btn-contacts").classList.toggle("open", open);
+  relayoutTutorial();   // the panel pushes the message down on phones
 }
 $("btn-contacts").addEventListener("click", () =>
   setContactsOpen($("contacts-panel").classList.contains("hidden")));
@@ -138,9 +167,11 @@ document.querySelectorAll(".mode").forEach((btn) =>
     if (!$("username").value.trim()) return $("username").focus();
     mode = btn.dataset.mode;
     const label = mode.charAt(0).toUpperCase() + mode.slice(1);
-    $("mission-mode").textContent = `${label} mode · ${BADGES[mode]} badge`;
+    $("mission-mode").className = `mission-mode tier-${mode}`;
+    $("mission-mode").innerHTML = `${label} mode · ${badgeIcon(mode)}${BADGES[mode]} badge`;
     $("mission-tip").textContent = MISSIONS[mode];
     show("mission-screen");
+    maybeStartMissionTutorial();   // new players: walk through the example inbox
   })
 );
 
@@ -165,11 +196,11 @@ $("btn-start").addEventListener("click", () => {
 function renderDots() {
   let html = "";
   for (let i = 0; i < ROUNDS; i++) {
-    let cls = "";
-    if (results[i] === true) cls = "correct";
-    else if (results[i] === false) cls = "wrong";
+    let cls = "", mark = "";
+    if (results[i] === true) { cls = "correct"; mark = "✓"; }
+    else if (results[i] === false) { cls = "wrong"; mark = "✗"; }
     else if (i === round - 1) cls = "current";
-    html += `<span class="dot ${cls}"></span>`;
+    html += `<span class="dot ${cls}" aria-hidden="true">${mark}</span>`;
   }
   $("dots").innerHTML = html;
   $("dots").setAttribute("aria-label", `Round ${Math.min(round, ROUNDS)} of ${ROUNDS}, ${correct} correct`);
@@ -183,6 +214,7 @@ function renderStreak() {
 // ---------- Play ----------
 async function nextRound() {
   await ready;
+  endTutorial();
   round++;
   $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
   $("result").classList.add("hidden");
@@ -307,7 +339,8 @@ function placePeek() {
   if (!peekFor || peek.hidden) return;
   if (!document.body.contains(peekFor)) return hidePeek();
   const gap = 8, edge = 12;
-  const column = $("message").getBoundingClientRect();
+  // Stay inside the message the link is in
+  const column = (peekFor.closest(".email, .sms") || $("message")).getBoundingClientRect();
   peek.style.maxWidth = `${Math.max(200, Math.min(360, column.width, window.innerWidth - 2 * edge))}px`;
   const w = peek.offsetWidth, h = peek.offsetHeight;
   let r = peekFor.getBoundingClientRect();
@@ -354,6 +387,383 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePeek(); });
 window.addEventListener("scroll", placePeek, { passive: true });
 window.addEventListener("resize", placePeek);
+
+// ---------- Tutorial (mission screen) ----------
+// Runs on the mission briefing, before "Start mission", using the example
+// inbox there (never on the play screen). Six callouts, one at a time: sender,
+// trusted contacts, link, Phish / Legit, progress dots, and the "?" button.
+// It starts by itself for a new player; the "?" in the top bar replays it.
+//
+// The "seen it" flag is saved ONLY when the player finishes (Got it on the
+// last tip) or skips (Skip tutorial, Escape, or "?" while it's open).
+// Anything else that closes it (Start mission, Change difficulty) does not
+// save, so it shows again next time they reach the briefing.
+// It's remembered per player name, so every new player on the same browser
+// (say, someone trying the game after you) gets it automatically.
+const TUTORIAL_KEY = "ps-tutorial-seen-players";
+const canHover = () => window.matchMedia("(hover: hover)").matches;
+const inSample = (sel) => document.querySelector(`#sample-message ${sel}`);
+
+// The example message: fictional, like every scenario.
+$("sample-message").innerHTML = renderMessage({
+  scenario_id: 7,
+  channel: "email",
+  sender: "it-desk@bayline-energy-support.net",
+  subject: "Your password expires today",
+  body: "Your Bayline Energy password expires in 2 hours. Sign in now to keep your account active.",
+  link: "http://bayline-energy-support.net/sign-in",
+});
+
+// Each step falls back to something that exists, so a step is never skipped.
+// The sound part of the last tip only shows once the game has a sound toggle (#btn-sound).
+const TUTORIAL_STEPS = [
+  {
+    target: () => inSample(".from") || $("sample-message"),
+    text: () => "Check who it's really from. Compare it to your trusted contacts.",
+  },
+  {
+    target: () => document.querySelector("#mission-screen .contacts"),
+    text: () => "These are the real websites and phone numbers. If a message doesn't match, be suspicious.",
+  },
+  {
+    target: () => inSample(".link-chip") || inSample(".body") || $("sample-message"),
+    text: () => `${canHover() ? "Hover" : "Tap"} a link to see where it really goes. Look at the main domain.`,
+  },
+  {
+    target: () => $("sample-answers"),
+    text: () => "Decide: Phish or Legit? On a keyboard, use ← for Phish and → for Legit.",
+  },
+  {
+    target: () => $("sample-dots"),
+    text: () => "✓ means you got it right, ✗ means you got hooked or were too cautious.",
+  },
+  {
+    target: () => ($("btn-sound") ? document.querySelector(".run-tools") : $("btn-tutorial")),
+    text: () => $("btn-sound")
+      ? "Turn sound on here, and press ? anytime to replay this tutorial."
+      : "Press ? anytime to replay this tutorial.",
+  },
+];
+
+// Names are matched ignoring capital letters and extra spaces ("Sam " = "sam").
+const playerKey = () => $("username").value.trim().replace(/\s+/g, " ").toLowerCase();
+function seenPlayers() {
+  try {
+    const list = JSON.parse(localStorage.getItem(TUTORIAL_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
+function tutorialSeen() {
+  return seenPlayers().includes(playerKey());
+}
+function markTutorialSeen() {
+  const list = seenPlayers();
+  if (list.includes(playerKey())) return;
+  list.push(playerKey());
+  try { localStorage.setItem(TUTORIAL_KEY, JSON.stringify(list)); } catch (e) {}
+}
+
+const tut = document.createElement("div");
+tut.className = "tutorial";
+tut.setAttribute("role", "dialog");
+tut.setAttribute("aria-labelledby", "tut-text");
+tut.hidden = true;
+document.body.appendChild(tut);
+
+let tutStep = -1;       // -1 when the tutorial isn't showing
+let tutTarget = null;   // the element the current callout points at
+let tutReturn = null;   // where keyboard focus goes back to afterwards
+let tutMode = null;     // "float" (in open space next to the target) or "inline" (in the page flow)
+let tutOffset = null;   // float: the callout's position relative to the target
+
+const onMission = () => document.body.dataset.screen === "mission-screen";
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+// Called when the briefing opens. Waits for the page to lay out (two frames,
+// and the web font, capped at a short wait) so callouts are placed against
+// the final layout.
+async function maybeStartMissionTutorial() {
+  if (tutorialSeen()) return;
+  await nextFrame();
+  await nextFrame();
+  if (document.fonts?.ready) await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))]);
+  if (onMission() && tutStep < 0) startTutorial();
+}
+
+function startTutorial() {
+  if (!onMission()) return;
+  hidePeek();
+  if (tutStep < 0) tutReturn = document.activeElement;
+  tutStep = 0;
+  $("btn-tutorial").classList.add("open");
+  showTutorialStep();
+}
+
+function clearTutorialTarget() {
+  if (tutTarget) tutTarget.classList.remove("tut-target");
+  tutTarget = null;
+}
+
+function showTutorialStep() {
+  clearTutorialTarget();
+  if (tutStep >= TUTORIAL_STEPS.length) return endTutorial({ save: true });   // finished
+
+  const step = TUTORIAL_STEPS[tutStep];
+  tutTarget = step.target();
+  if (!tutTarget) return endTutorial({ save: false });   // the briefing is gone
+  tutTarget.classList.add("tut-target");
+  tut.innerHTML = `
+    <span class="tut-arrow" aria-hidden="true"></span>
+    <p class="tut-count">Tip ${tutStep + 1} of ${TUTORIAL_STEPS.length}</p>
+    <p class="tut-text" id="tut-text">${esc(step.text())}</p>
+    <div class="tut-actions">
+      <button type="button" class="tut-skip">Skip tutorial</button>
+      <button type="button" class="tut-ok">Got it</button>
+    </div>`;
+  tut.hidden = false;
+  layoutTutorial();
+  replayAnimation(tut);
+  tut.querySelector(".tut-ok").focus({ preventScroll: true });
+}
+
+// ---------- Placing a callout ----------
+// 1. Bring the target on screen.
+// 2. Look for open space next to it (below, above, right, left, sliding along
+//    each side) that stays on screen and covers no text, button, or the target.
+// 3. No room? Scroll to make room above or below the target, and look again.
+// 4. Still no room (for example inside the email on a phone)? Put the callout
+//    in the page flow right under the target, so it pushes the content below
+//    it down instead of covering it.
+const TUT_GAP = 14;   // target to callout (leaves room for the arrow)
+const TUT_EDGE = 8;   // callout to screen edge
+const TUT_PAD = 4;    // breathing room around anything the callout must not cover
+
+// Paragraph-like elements: only their lines of text count, not empty padding.
+const TEXT_SEL = "h1, h2, h3, p, li, th, td, .brand-name, .email-time, .link-hint, .streak";
+// Solid things: their whole box counts.
+const BOX_SEL = "button, input, img, .avatar, .dot, .answer, .status-bar";
+const textRange = document.createRange();
+
+function tutorialObstacles(targetRect) {
+  const rects = [];
+  const add = (r) => { if (r.width >= 1 && r.height >= 1) rects.push(r); };
+  const skip = (el) => tut.contains(el) || el.closest(".ocean-bg");
+  document.querySelectorAll(TEXT_SEL).forEach((el) => {
+    if (skip(el)) return;
+    textRange.selectNodeContents(el);
+    for (const r of textRange.getClientRects()) add(r);
+  });
+  document.querySelectorAll(BOX_SEL).forEach((el) => { if (!skip(el)) add(el.getBoundingClientRect()); });
+  // The email's "INBOX" bar is drawn by CSS (::before), so add its label by hand
+  document.querySelectorAll(".email").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.height) add(new DOMRect(r.left + 12, r.top + 4, 70, 28));
+  });
+  // Never cover the target or its ring
+  const t = targetRect;
+  rects.push(new DOMRect(t.left - 6, t.top - 6, t.width + 12, t.height + 12));
+  return rects;
+}
+
+// Every position from the middle of a range outward, so callouts prefer to be centered on the target.
+function spread(lo, hi, steps = 6) {
+  if (hi < lo) return [];
+  const mid = (lo + hi) / 2, half = (hi - lo) / 2, out = [mid];
+  for (let i = 1; i <= steps; i++) out.push(mid - (half * i) / steps, mid + (half * i) / steps);
+  return out;
+}
+
+function findTutorialSpot(r, w, h) {
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  const obstacles = tutorialObstacles(r);
+  const free = (left, top) =>
+    left >= TUT_EDGE && top >= TUT_EDGE && left + w <= vw - TUT_EDGE && top + h <= vh - TUT_EDGE &&
+    !obstacles.some((o) => o.left < left + w + TUT_PAD && o.right > left - TUT_PAD &&
+                           o.top < top + h + TUT_PAD && o.bottom > top - TUT_PAD);
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  // The arrow sits at least 20px in from the callout's corners
+  const lefts = spread(cx - w + 20, cx - 20), tops = spread(cy - h + 20, cy - 20);
+  const sides = [
+    ["below", lefts.map((left) => [left, r.bottom + TUT_GAP])],
+    ["above", lefts.map((left) => [left, r.top - TUT_GAP - h])],
+    ["right", tops.map((top) => [r.right + TUT_GAP, top])],
+    ["left", tops.map((top) => [r.left - TUT_GAP - w, top])],
+  ];
+  for (const [side, spots] of sides) {
+    for (const [left, top] of spots) {
+      if (free(left, top)) return { side, left, top, arrow: side === "below" || side === "above" ? cx - left : cy - top };
+    }
+  }
+  return null;
+}
+
+function applyFloat(spot, r, w, h) {
+  tutMode = "float";
+  tutOffset = { dx: spot.left - r.left, dy: spot.top - r.top };
+  tut.dataset.side = spot.side;
+  tut.style.left = `${spot.left}px`;
+  tut.style.top = `${spot.top}px`;
+  const vertical = spot.side === "below" || spot.side === "above";
+  tut.style.setProperty(vertical ? "--arrow-x" : "--arrow-y",
+    `${Math.min(Math.max(20, spot.arrow), (vertical ? w : h) - 20)}px`);
+}
+
+function applyInline(target) {
+  tutMode = "inline";
+  tutOffset = null;
+  tut.classList.add("tut-inline");
+  tut.style.left = tut.style.top = "";
+  tut.dataset.side = "below";
+  // Right under the target: the sender line itself, or the row the target is
+  // in (link row, Phish / Legit, dots). In the top bar it goes just under the
+  // bar, lined up with the "?" button, so the bar's own layout isn't touched.
+  const bar = target.closest(".topbar");
+  if (bar) {
+    bar.after(tut);
+    const gutter = document.documentElement.clientWidth - target.getBoundingClientRect().right;
+    tut.style.marginLeft = "auto";
+    tut.style.marginRight = `${Math.max(TUT_EDGE, gutter - 20)}px`;
+  } else {
+    // The sender line sits right on top of the callout; anything else gets it
+    // under its whole row. A link whose "inspect" hint has wrapped onto the
+    // next line (phones) gets it directly under the link, before the hint.
+    const hint = target.matches(".link-chip") && target.parentElement.querySelector(".link-hint");
+    const hintWrapped = hint && hint.getBoundingClientRect().top >= target.getBoundingClientRect().bottom - 2;
+    const anchor = target.matches(".email .from") || hintWrapped ? target
+      : target.closest(".sample-progress") || target.closest(".link, .answers, .dots") || target;
+    anchor.after(tut);
+    widenInlineInEmailHeader();
+  }
+  pointInlineArrow();
+  // Show the target and the whole callout if they fit; the target wins if not
+  const t = target.getBoundingClientRect(), c = tut.getBoundingClientRect();
+  const down = Math.min(c.bottom + TUT_EDGE - window.innerHeight, t.top - TUT_EDGE);
+  if (down > 0) window.scrollBy(0, down);
+  else if (t.top < TUT_EDGE) window.scrollBy(0, t.top - TUT_EDGE);
+}
+
+// Under the sender line the callout starts in the narrow sender column. Where
+// the avatar (left) or the time (right) has already ended above it, let it
+// widen into that space, so it isn't squeezed on phones.
+function widenInlineInEmailHeader() {
+  const who = tut.parentElement;
+  if (!who?.classList.contains("email-who")) return;
+  const head = who.closest(".email-head");
+  const cs = getComputedStyle(head);
+  const h = head.getBoundingClientRect(), w = who.getBoundingClientRect();
+  const top = tut.getBoundingClientRect().top;
+  const clear = (sel) => { const el = head.querySelector(sel); return !el || el.getBoundingClientRect().bottom + 4 <= top; };
+  if (clear(".avatar")) tut.style.marginLeft = `${-(w.left - h.left - parseFloat(cs.paddingLeft))}px`;
+  if (clear(".email-time")) tut.style.marginRight = `${-(h.right - parseFloat(cs.paddingRight) - w.right)}px`;
+}
+
+function pointInlineArrow() {
+  const t = tutTarget.getBoundingClientRect(), c = tut.getBoundingClientRect();
+  const x = t.left + t.width / 2 - c.left;
+  tut.style.setProperty("--arrow-x", `${Math.min(Math.max(20, x), c.width - 20)}px`);
+}
+
+function layoutTutorial() {
+  if (tutStep < 0 || !tutTarget) return;
+  // Start floating and out of sight, so it can be measured without covering anything
+  tut.classList.remove("tut-inline");
+  tut.style.marginLeft = tut.style.marginRight = "";
+  if (tut.parentNode !== document.body) document.body.appendChild(tut);
+  tut.style.left = "-9999px";
+  tut.style.top = "0px";
+  const w = tut.offsetWidth, h = tut.offsetHeight;
+  const vh = window.innerHeight;
+  const rect = () => tutTarget.getBoundingClientRect();
+
+  let r = rect();
+  if (r.top < TUT_EDGE || r.bottom > vh - TUT_EDGE) {
+    tutTarget.scrollIntoView({ block: "center" });
+    r = rect();
+  }
+  let spot = findTutorialSpot(r, w, h);
+  if (!spot) {
+    // Scroll to open up room below, then above, the target
+    const startY = window.scrollY;
+    for (const dy of [r.bottom + TUT_GAP + h + TUT_EDGE - vh, r.top - TUT_GAP - h - TUT_EDGE]) {
+      if (Math.abs(dy) < 1) continue;
+      window.scrollTo(0, startY + dy);
+      if (Math.abs(window.scrollY - startY) < 1) continue;   // the page can't scroll that way
+      r = rect();
+      spot = findTutorialSpot(r, w, h);
+      if (spot) break;
+      window.scrollTo(0, startY);
+    }
+    r = rect();
+  }
+  if (spot) applyFloat(spot, r, w, h);
+  else applyInline(tutTarget);
+}
+
+// On scroll, a floating callout moves with its target; an inline one already does.
+function placeTutorial() {
+  if (tutStep < 0 || !tutTarget) return;
+  if (!document.body.contains(tutTarget)) {
+    // The message was re-rendered under the callout: point at the new element.
+    const fresh = TUTORIAL_STEPS[tutStep].target();
+    if (!fresh) return endTutorial({ save: false });
+    tutTarget = fresh;
+    tutTarget.classList.add("tut-target");
+    return layoutTutorial();
+  }
+  if (tutMode !== "float") return;
+  const r = tutTarget.getBoundingClientRect();
+  tut.style.left = `${r.left + tutOffset.dx}px`;
+  tut.style.top = `${r.top + tutOffset.dy}px`;
+}
+// When the layout changes (resize, contacts panel), find a new spot.
+function relayoutTutorial() {
+  if (tutStep >= 0) layoutTutorial();
+}
+
+// save: true only when the player finished or skipped the tutorial.
+function endTutorial({ save = false } = {}) {
+  if (tutStep < 0) return;
+  tutStep = -1;
+  clearTutorialTarget();
+  if (save) markTutorialSeen();
+  $("btn-tutorial").classList.remove("open");
+  const hadFocus = tut.contains(document.activeElement);
+  tut.hidden = true;
+  tut.classList.remove("tut-inline");
+  tut.style.marginLeft = tut.style.marginRight = "";
+  document.body.appendChild(tut);
+  tutMode = tutOffset = null;
+  if (hadFocus) {
+    const back = [tutReturn, $("btn-start"), $("btn-tutorial")]
+      .find((el) => el && document.body.contains(el) && !el.disabled && el.offsetParent);
+    if (back) back.focus({ preventScroll: true });
+  }
+}
+
+tut.addEventListener("click", (e) => {
+  if (e.target.closest(".tut-skip")) return endTutorial({ save: true });
+  if (e.target.closest(".tut-ok")) {
+    tutStep++;
+    showTutorialStep();
+  }
+});
+// Escape skips. Enter presses "Got it", unless focus is already on one of the
+// callout's own buttons (then Enter presses that button, as usual).
+document.addEventListener("keydown", (e) => {
+  if (tutStep < 0) return;
+  if (e.key === "Escape") return endTutorial({ save: true });
+  if (e.key === "Enter" && !e.repeat && !tut.contains(document.activeElement)) {
+    e.preventDefault();
+    tut.querySelector(".tut-ok")?.click();
+  }
+});
+window.addEventListener("scroll", placeTutorial, { passive: true });
+window.addEventListener("resize", relayoutTutorial);
+// "?" in the top bar (mission screen) replays it; clicking it while open closes it (counts as a skip).
+$("btn-tutorial").addEventListener("click", () => {
+  if (tutStep >= 0) return endTutorial({ save: true });
+  startTutorial();
+});
 
 function renderMessage(s) {
   const link = renderLink(s);
@@ -538,6 +948,7 @@ async function answer(guess) {
   answering = true;
   $("btn-phish").disabled = $("btn-legit").disabled = true;
   hidePeek();
+  endTutorial();
 
   try {
     const r = await apiAnswer(current.scenario_id, guess);
@@ -591,6 +1002,18 @@ async function answer(guess) {
 
 $("btn-phish").addEventListener("click", () => answer("Phish"));
 $("btn-legit").addEventListener("click", () => answer("Legit"));
+
+// Keyboard shortcuts on the play screen: ← Phish, → Legit.
+// Only while the buttons are active, and never while typing in a field.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  if (document.body.dataset.screen !== "play-screen" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  const btn = e.key === "ArrowLeft" ? $("btn-phish") : $("btn-legit");
+  if (btn.disabled || answering) return;
+  e.preventDefault();
+  btn.click();
+});
 $("btn-next").addEventListener("click", () => (round < ROUNDS ? nextRound() : finish()));
 
 // ---------- Badge reveal ----------
@@ -623,9 +1046,9 @@ function burstConfetti() {
 }
 
 function revealBadge(isMaster) {
-  const [icon, ...name] = BADGES[mode].split(" ");
-  $("badge-art").textContent = icon;
-  $("badge-name").textContent = name.join(" ");
+  $("badge-art").innerHTML = badgeIcon(mode);
+  $("badge-name").textContent = BADGES[mode];
+  $("badge-name").className = `badge-name tier-${mode}`;
   $("badge-reveal").classList.remove("hidden");
   replayAnimation($("badge-art"));
   replayAnimation($("badge-name"));
@@ -638,6 +1061,16 @@ function revealBadge(isMaster) {
     $("badge-master").classList.add("hidden");
   }
   burstConfetti();
+}
+
+// No badge this run: a hook takes the badge's place at the top of the card
+function showMissedBadge() {
+  $("badge-art").textContent = "🪝";
+  $("badge-name").textContent = "";
+  $("badge-master").classList.add("hidden");
+  $("confetti").innerHTML = "";
+  $("badge-reveal").classList.remove("hidden");
+  replayAnimation($("badge-art"));
 }
 
 // ---------- End of run ----------
@@ -666,13 +1099,13 @@ async function finish() {
   const owned = Array.isArray(player?.badges) ? player.badges : (passed ? [mode] : []);
   const isMaster = ALL_MODES.every((m) => owned.includes(m));
 
-  $("end-title").textContent = passed ? `You earned ${BADGES[mode]}!` : `${correct} of ${ROUNDS} correct`;
-  $("end-text").textContent = passed
+  $("end-title").innerHTML = passed ? `You earned ${badgeLabel(mode)}!` : `${correct} of ${ROUNDS} correct`;
+  $("end-text").innerHTML = passed
     ? "Nice catch. Try the next mode!"
-    : `You need ${TO_PASS} to earn ${BADGES[mode]}. Every round is new, so try again!`;
+    : `You need ${TO_PASS} to earn ${badgeLabel(mode)}. Every round is new, so try again!`;
 
   if (passed) revealBadge(isMaster);
-  else $("badge-reveal").classList.add("hidden");
+  else showMissedBadge();
 
   renderRecap();
   show("end-screen");
@@ -683,16 +1116,37 @@ $("btn-home").addEventListener("click", () => show("start-screen"));
 
 // ---------- Leaderboard ----------
 // The same list is shown on the home screen and the end screen.
+const LEADERBOARD_SHOWN = 7;   // rows shown, so the card doesn't run too tall
+const isMasterPlayer = (p) => ALL_MODES.every((b) => p.badges.includes(b));
+
+// One row: rank (or trophy) | name + badge icons | points
+function leaderboardRow(lead, p, withIcons) {
+  const icons = withIcons
+    ? p.badges.filter((m) => BADGES[m])
+        .map((m) => `<span class="lb-badge" title="${BADGES[m]} badge">${badgeIcon(m)}</span>`).join("") +
+      (isMasterPlayer(p) ? '<span class="lb-badge" title="PhishSense Master">🏆</span>' : "")
+    : "";
+  return `<li class="lb-row"><span class="lb-rank">${lead}</span>` +
+    `<span class="lb-who"><b class="lb-name" title="${esc(p.username)}">${esc(p.username)}</b>${icons}</span>` +
+    `<span class="lb-score">${p.total_score} pts</span></li>`;
+}
+
 async function loadLeaderboard() {
   const rows = await apiLeaderboard();
   const html = rows.length
-    ? rows.map((p) => {
-        const icons = p.badges.map((b) => BADGES[b]?.split(" ")[0] || "").join(" ");
-        const master = ALL_MODES.every((b) => p.badges.includes(b)) ? " 🏆" : "";
-        return `<li><b>${esc(p.username)}</b> ${icons}${master} <span>${p.total_score} pts</span></li>`;
-      }).join("")
+    ? rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
     : '<li class="empty">No scores yet. Be the first!</li>';
   document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));
+
+  // Home screen: Masters (all three badges) also get their own list,
+  // taken from every player the server sent, not just the top 7
+  const masters = rows.filter(isMasterPlayer);
+  $("start-screen").querySelector(".masters-list").innerHTML = masters.length
+    ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
+    : '<li class="empty">No Masters yet. Be the first!</li>';
+  // Only 1 or 2 Masters: a soft nudge underneath so the card doesn't look empty
+  $("start-screen").querySelector(".masters-join")
+    .classList.toggle("hidden", !(masters.length === 1 || masters.length === 2));
 }
 
 const ready = checkBackend();
