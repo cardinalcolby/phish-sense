@@ -53,7 +53,7 @@ let missed;   // every red flag from the rounds the player got wrong
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
-  if (id !== "play-screen") endTutorial();
+  endTutorial();   // closing it this way doesn't count as seen
   ["start-screen", "mission-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
   $(id).classList.remove("hidden");
   // style.css uses this to pick the big header or the slim top bar,
@@ -171,6 +171,7 @@ document.querySelectorAll(".mode").forEach((btn) =>
     $("mission-mode").innerHTML = `${label} mode · ${badgeIcon(mode)}${BADGES[mode]} badge`;
     $("mission-tip").textContent = MISSIONS[mode];
     show("mission-screen");
+    maybeStartMissionTutorial();   // new players: walk through the sample message
   })
 );
 
@@ -233,7 +234,6 @@ async function nextRound() {
   seen.push(current.scenario_id);
   $("message").innerHTML = renderMessage(current);
   $("btn-phish").disabled = $("btn-legit").disabled = false;
-  maybeStartFirstRoundTutorial();   // waits for layout, then shows tip 1 on a new player's first round
 }
 
 // A steady clock time per scenario, so the inbox and phone look real
@@ -339,7 +339,8 @@ function placePeek() {
   if (!peekFor || peek.hidden) return;
   if (!document.body.contains(peekFor)) return hidePeek();
   const gap = 8, edge = 12;
-  const column = $("message").getBoundingClientRect();
+  // Stay inside the message the link is in (the live one or the briefing's sample)
+  const column = (peekFor.closest(".email, .sms") || $("message")).getBoundingClientRect();
   peek.style.maxWidth = `${Math.max(200, Math.min(360, column.width, window.innerWidth - 2 * edge))}px`;
   const w = peek.offsetWidth, h = peek.offsetHeight;
   let r = peekFor.getBoundingClientRect();
@@ -387,40 +388,61 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePeek()
 window.addEventListener("scroll", placePeek, { passive: true });
 window.addEventListener("resize", placePeek);
 
-// ---------- First-round tutorial ----------
-// On a new player's first round, three callouts point at the sender, the link,
-// and the Phish / Legit buttons, one at a time. The "?" button in the top bar
-// replays it. Callouts never block the game: answering closes them.
+// ---------- Tutorial ----------
+// Runs on the mission briefing, before "Start mission", using a sample message
+// (never on its own during the live game). Three callouts point at the sender,
+// the link, and the Phish / Legit buttons, one at a time. It starts by itself
+// for a new player; "Show me again" on the briefing and the "?" button during
+// play replay it (the "?" one points at the real message).
 //
 // The "seen it" flag is saved ONLY when the player finishes (Got it on the
-// last tip) or skips (Skip tutorial, Escape, or the "?" button while open).
-// Anything else that closes it (answering, Next, leaving the screen) does not
-// save, so the tutorial comes back on their next first round.
-const TUTORIAL_KEY = "ps-tutorial-seen";
+// last tip) or skips (Skip tutorial, Escape, or the replay button while open).
+// Anything else that closes it (Start mission, Back, answering) does not save,
+// so it shows again next time they reach the briefing.
+// (New key name: the old one was saved by the in-game version.)
+const TUTORIAL_KEY = "ps-tutorial-seen-v2";
 const canHover = () => window.matchMedia("(hover: hover)").matches;
+
+// Where the tutorial is pointing: a message, its Phish / Legit buttons,
+// and the button that replays it (highlighted while it's open).
+const PLAY_SCOPE = { message: () => $("message"), answers: () => document.querySelector("#play-screen .answers"), toggle: () => $("btn-tutorial") };
+const MISSION_SCOPE = { message: () => $("sample-message"), answers: () => $("sample-answers"), toggle: () => $("btn-mission-tutorial") };
+let tutScope = MISSION_SCOPE;
+
 const inMessage = (...selectors) => {
+  const root = tutScope.message();
   for (const sel of selectors) {
-    const el = document.querySelector(`#message ${sel}`);
+    const el = root?.querySelector(sel);
     if (el) return el;
   }
   return null;
 };
+
+// The sample message on the briefing: fictional, like every scenario.
+$("sample-message").innerHTML = renderMessage({
+  scenario_id: 7,
+  channel: "email",
+  sender: "it-desk@bayline-energy-support.net",
+  subject: "Your password expires today",
+  body: "Your Bayline Energy password expires in 2 hours. Sign in now to keep your account active.",
+  link: "http://bayline-energy-support.net/sign-in",
+});
 
 // Each step lists its targets in order of preference and always ends on a
 // fallback that exists, so a step is never skipped.
 const TUTORIAL_STEPS = [
   {
     // Email: the From line. Text message: the phone's contact name.
-    target: () => inMessage(".email .from", ".email .email-who", ".sms .label b", ".sms .label", ".email-head") || $("message"),
+    target: () => inMessage(".email .from", ".email .email-who", ".sms .label b", ".sms .label", ".email-head") || tutScope.message(),
     text: () => "Check who it's really from. Compare it to your trusted contacts.",
   },
   {
     // The link, or the message body when there's no link
-    target: () => inMessage(".link-chip", ".email .body", ".sms .bubble") || $("message"),
+    target: () => inMessage(".link-chip", ".email .body", ".sms .bubble") || tutScope.message(),
     text: () => `${canHover() ? "Hover" : "Tap"} links to see where they really go.`,
   },
   {
-    target: () => document.querySelector("#play-screen .answers"),
+    target: () => tutScope.answers(),
     text: () => "Decide: Phish or Legit?",
   },
 ];
@@ -443,30 +465,27 @@ let tutStep = -1;      // -1 when the tutorial isn't showing
 let tutTarget = null;  // the element the current callout points at
 let tutReturn = null;  // where keyboard focus goes back to afterwards
 
-const messageReady = () => !!document.querySelector("#message .email, #message .sms");
+const messageReady = (scope) => !!scope.message()?.querySelector(".email, .sms");
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-// Called by nextRound() right after the scenario is rendered. Waits for the
-// browser to lay the message out (two frames, and the web font, capped at a
-// short wait) so the first callout lands in the right place.
-async function maybeStartFirstRoundTutorial() {
-  if (round !== 1 || tutorialSeen()) return;
-  const forRound = current;
+// Called when the briefing opens. Waits for the page to lay out (two frames,
+// and the web font, capped at a short wait) so the first callout lands right.
+async function maybeStartMissionTutorial() {
+  if (tutorialSeen()) return;
   await nextFrame();
   await nextFrame();
   if (document.fonts?.ready) await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))]);
-  // Still the same first-round message, on the play screen, with nothing in the way?
-  if (current !== forRound || round !== 1 || answering || tutStep >= 0) return;
-  if (document.body.dataset.screen !== "play-screen" || !messageReady()) return;
-  startTutorial();
+  if (document.body.dataset.screen !== "mission-screen" || tutStep >= 0) return;
+  startTutorial(MISSION_SCOPE);
 }
 
-function startTutorial() {
-  if (!messageReady()) return;
+function startTutorial(scope) {
+  if (!messageReady(scope)) return;
   hidePeek();
   if (tutStep < 0) tutReturn = document.activeElement;
+  tutScope = scope;
   tutStep = 0;
-  $("btn-tutorial").classList.add("open");
+  scope.toggle().classList.add("open");
   showTutorialStep();
 }
 
@@ -532,11 +551,12 @@ function endTutorial({ save = false } = {}) {
   tutStep = -1;
   clearTutorialTarget();
   if (save) markTutorialSeen();
-  $("btn-tutorial").classList.remove("open");
+  tutScope.toggle().classList.remove("open");
   const hadFocus = tut.contains(document.activeElement);
   tut.hidden = true;
   if (hadFocus) {
-    const back = [tutReturn, $("btn-phish"), $("btn-tutorial")]
+    const next = tutScope === PLAY_SCOPE ? $("btn-phish") : $("btn-start");
+    const back = [tutReturn, next, tutScope.toggle()]
       .find((el) => el && document.body.contains(el) && !el.disabled && el.offsetParent);
     if (back) back.focus({ preventScroll: true });
   }
@@ -552,9 +572,15 @@ tut.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") endTutorial({ save: true }); });
 window.addEventListener("scroll", placeTutorial, { passive: true });
 window.addEventListener("resize", placeTutorial);
+// Replay buttons: "Show me again" on the briefing, "?" during play.
+// Clicking one while the tutorial is open closes it (counts as a skip).
+$("btn-mission-tutorial").addEventListener("click", () => {
+  if (tutStep >= 0) return endTutorial({ save: true });
+  startTutorial(MISSION_SCOPE);
+});
 $("btn-tutorial").addEventListener("click", () => {
   if (tutStep >= 0) return endTutorial({ save: true });
-  if (!answering) startTutorial();
+  if (!answering) startTutorial(PLAY_SCOPE);
 });
 
 function renderMessage(s) {

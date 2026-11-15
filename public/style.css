@@ -250,7 +250,31 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .contact-phone { color: var(--text); }
 .contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
-/* ---------- First-round tutorial (see "First-round tutorial" in app.js) ---------- */
+/* ---------- Tutorial (see "Tutorial" in app.js) ---------- */
+/* Sample message card on the mission briefing */
+.practice-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 12px; }
+.practice-title {
+  margin: 0; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.practice-replay {
+  font-size: 13px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  background: transparent; color: var(--text); border: 2px solid #2b4a68;
+}
+.practice-replay:hover, .practice-replay.open { border-color: var(--teal); }
+.practice-replay.open { background: rgba(45, 224, 196, 0.12); }
+.practice-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 992px) {
+  .practice-body { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+}
+/* The sample's Phish / Legit are pictures of the buttons, not buttons */
+.sample-answers .answer {
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px; border-radius: 10px; font-weight: 600; cursor: default;
+}
+.practice-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+
+
 .run-tools { display: flex; align-items: center; gap: 8px; }
 /* "?" button next to Trusted contacts: same outline pill look, as a circle */
 .help-toggle {
