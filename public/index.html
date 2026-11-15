@@ -6,95 +6,151 @@
   <title>PhishSense: Don't Get Hooked</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <!-- Bootstrap 5 (CSS only): used for the grid. style.css loads after it and keeps our own look. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <header>
+<body data-screen="start-screen">
+  <!-- Big header: home screen only -->
+  <header class="hero">
     <img src="logo-badge.svg" alt="PhishSense logo" class="logo" />
     <h1>Phish<span>Sense</span></h1>
     <p class="tagline">Don't get hooked.</p>
   </header>
 
-  <main>
+  <!-- Slim top bar: mission, play, and end screens -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="logo-badge.svg" alt="" class="brand-logo" />
+        <span class="brand-name">Phish<span>Sense</span></span>
+      </div>
+      <div class="run-status">
+        <div class="run-info">
+          <div id="dots" class="dots" role="img" aria-label="Round results"></div>
+          <p id="progress" class="round-counter"></p>
+        </div>
+        <p id="streak" class="streak" aria-live="polite"></p>
+        <button id="btn-contacts" class="contacts-toggle" type="button" aria-label="Trusted contacts"
+          aria-expanded="false" aria-controls="contacts-panel">📇 <span class="label-long">Trusted contacts</span><span class="label-short">Contacts</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
     <!-- Screen 1: Start -->
-    <section id="start-screen" class="screen">
-      <p class="intro">Spot the scams before they hook you.</p>
+    <section id="start-screen" class="screen row g-3 justify-content-center">
+      <div class="col-12 home-col">
+        <p class="intro">Spot the scams before they hook you.</p>
 
-      <p class="step-label">1. Enter your name</p>
-      <input id="username" placeholder="Name" maxlength="20" />
+        <p class="step-label">1. Enter your name</p>
+        <input id="username" placeholder="Name" maxlength="20" />
 
-      <p class="step-label">2. Choose your difficulty</p>
-      <div class="modes">
-        <button class="mode" data-mode="easy">🐟 Easy<br /><small>Minnow badge</small></button>
-        <button class="mode" data-mode="medium">🎣 Medium<br /><small>Angler badge</small></button>
-        <button class="mode" data-mode="hard">⚓ Hard<br /><small>Captain badge</small></button>
+        <p class="step-label">2. Choose your difficulty</p>
+        <div class="modes">
+          <button class="mode" data-mode="easy">🐟 Easy<br /><small>Minnow badge</small></button>
+          <button class="mode" data-mode="medium">🎣 Medium<br /><small>Angler badge</small></button>
+          <button class="mode" data-mode="hard">⚓ Hard<br /><small>Captain badge</small></button>
+        </div>
+
+        <section class="ps-card leaderboard">
+          <h3>🏆 Leaderboard</h3>
+          <ol class="leaderboard-list"></ol>
+        </section>
       </div>
     </section>
 
     <!-- Screen 2: Mission briefing (after choosing a difficulty) -->
-    <section id="mission-screen" class="screen hidden">
-      <div class="card briefing">
-        <p class="briefing-title">📋 Your mission</p>
-        <p id="mission-mode" class="mission-mode"></p>
-        <p>You work at <b>Bayline Energy</b>. Scammers are targeting your inbox.</p>
-        <p class="facts">Real company email: <b>@bayline-energy.com</b><br />
-          Real main line: <b>(404) 555-0100</b></p>
-        <p id="mission-tip"></p>
-        <p>Sort each message: <b>Phish</b> or <b>Legit</b>? Get 4 of 5 right to earn the badge.</p>
+    <!-- Large screens: briefing and contacts side by side. Phones: stacked. -->
+    <section id="mission-screen" class="screen row g-3 g-lg-4 justify-content-center hidden">
+      <div class="col-12 col-lg-7">
+        <div class="ps-card briefing">
+          <p class="briefing-title">📋 Your mission</p>
+          <p id="mission-mode" class="mission-mode"></p>
+          <p>You work at <b>Bayline Energy</b>. Scammers are targeting your inbox.</p>
+          <p class="facts">Real company email: <b>@bayline-energy.com</b><br />
+            Real main line: <b>(404) 555-0100</b></p>
+          <p id="mission-tip"></p>
+          <p>Sort each message: <b>Phish</b> or <b>Legit</b>? Get 4 of 5 right to earn the badge.</p>
+        </div>
       </div>
-      <div class="mission-buttons">
-        <button id="btn-back" class="secondary">← Change difficulty</button>
-        <button id="btn-start">Start mission</button>
+      <div class="col-12 col-lg-5">
+        <div class="ps-card contacts">
+          <p class="contacts-title">📇 Trusted contacts</p>
+          <div class="contacts-list"></div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="mission-buttons">
+          <button id="btn-back" class="secondary">← Change difficulty</button>
+          <button id="btn-start">Start mission</button>
+        </div>
       </div>
     </section>
 
-    <!-- Screen 3: Play -->
-    <section id="play-screen" class="screen hidden">
-      <div class="run-bar">
-        <div id="dots" class="dots" role="img" aria-label="Round results"></div>
-        <p id="streak" class="streak" aria-live="polite"></p>
+    <!-- Screen 3: Play
+         Large screens: message on the left (7 of 12), answer column on the right (5 of 12).
+         Phones: message, buttons, reaction, result, Next. -->
+    <section id="play-screen" class="screen row g-3 g-lg-4 justify-content-center align-items-start hidden">
+      <div class="col-12 col-lg-7">
+        <div class="message-wrap">
+          <div id="message" class="ps-card"></div>
+          <div id="pop-layer" class="pop-layer" aria-hidden="true"></div>
+        </div>
       </div>
 
-      <p id="progress"></p>
+      <div class="col-12 col-lg-5 play-side">
+        <!-- Opens in the page flow (pushes the buttons down), so it never covers them.
+             On phones it moves above the message. -->
+        <div id="contacts-panel" class="ps-card contacts contacts-panel hidden">
+          <p class="contacts-title">📇 Trusted contacts</p>
+          <div class="contacts-list"></div>
+        </div>
 
-      <div class="message-wrap">
-        <div id="message" class="card"></div>
-        <div id="pop-layer" class="pop-layer" aria-hidden="true"></div>
-      </div>
+        <div class="answers">
+          <button id="btn-phish" class="answer phish">🎣 Phish</button>
+          <button id="btn-legit" class="answer legit">✅ Legit</button>
+        </div>
 
-      <div class="answers">
-        <button id="btn-phish" class="answer phish">🎣 Phish</button>
-        <button id="btn-legit" class="answer legit">✅ Legit</button>
+        <!-- Reaction to the answer: hooked, dodged, too cautious, or safe -->
+        <p id="reaction" class="reaction hidden" role="status" aria-live="polite"></p>
+
+        <div id="result" class="ps-card hidden"></div>
+        <button id="btn-next" class="hidden">Next</button>
       </div>
-      <div id="result" class="card hidden"></div>
-      <button id="btn-next" class="hidden">Next</button>
     </section>
 
-    <!-- Screen 4: End of run -->
-    <section id="end-screen" class="screen hidden">
-      <div id="badge-reveal" class="badge-reveal hidden">
-        <div id="confetti" class="confetti" aria-hidden="true"></div>
-        <div id="badge-art" class="badge-art" aria-hidden="true"></div>
-        <p id="badge-name" class="badge-name"></p>
-        <p id="badge-master" class="badge-master hidden"></p>
+    <!-- Screen 4: End of run
+         Large screens: badge on the left, recap and leaderboard on the right. -->
+    <section id="end-screen" class="screen row g-3 g-lg-4 justify-content-center align-items-start hidden">
+      <div class="col-12 col-lg-5 end-main">
+        <div id="badge-reveal" class="badge-reveal hidden">
+          <div id="confetti" class="confetti" aria-hidden="true"></div>
+          <div id="badge-art" class="badge-art" aria-hidden="true"></div>
+          <p id="badge-name" class="badge-name"></p>
+          <p id="badge-master" class="badge-master hidden"></p>
+        </div>
+
+        <h2 id="end-title"></h2>
+        <p id="end-text"></p>
+
+        <button id="btn-home">Back to modes</button>
       </div>
 
-      <h2 id="end-title"></h2>
-      <p id="end-text"></p>
+      <div class="col-12 col-lg-7 end-side">
+        <div id="recap" class="ps-card recap hidden"></div>
 
-      <div id="recap" class="card recap hidden"></div>
-
-      <button id="btn-home">Back to modes</button>
-    </section>
-
-    <!-- Leaderboard (always visible) -->
-    <section class="card leaderboard">
-      <h3>🏆 Leaderboard</h3>
-      <ol id="leaderboard"></ol>
+        <section class="ps-card leaderboard">
+          <h3>🏆 Leaderboard</h3>
+          <ol class="leaderboard-list"></ol>
+        </section>
+      </div>
     </section>
   </main>
 
   <script src="mock-data.js"></script>
   <script src="app.js"></script>
+  <script src="fish-cursor.js"></script>
 </body>
 </html>
