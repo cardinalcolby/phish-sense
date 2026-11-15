@@ -81,8 +81,21 @@ body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap unde
 body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to make room for the big Start mission boat */
 .hidden { display: none !important; }
 
-/* Home: one centered column */
-.home-col { max-width: 800px; }
+/* Home: one column on phones (name + modes, Masters, Leaderboard).
+   900px and up: Leaderboard | name + modes | Masters. The side columns share one width,
+   so the middle stays centered, and they sit in one grid row, so both cards start at the
+   same top edge and stretch to the same height. */
+.home-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.home-center { order: 1; min-width: 0; }
+.home-masters { order: 2; }
+.home-board { order: 3; }
+.home-grid > .ps-card { margin: 0; min-width: 0; display: flex; flex-direction: column; }
+@media (min-width: 900px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+  .home-board { order: 1; }
+  .home-center { order: 2; }
+  .home-masters { order: 3; }
+}
 
 /* Mission: two cards side by side on large screens, same height.
    Uses the full container width, so its edges line up with the play screen and the logo. */
@@ -99,7 +112,40 @@ body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to 
 .intro { text-align: center; color: var(--muted); margin: 4px 0 0; }
 .step-label { margin: 22px 0 8px; font-weight: 600; color: var(--text); }
 .step-label + input { margin-top: 0; }
-#start-screen .leaderboard { margin-top: 24px; }
+/* Leaderboard and Masters rows: rank (or trophy) | name + badge icons | points.
+   Names never wrap; a long one ends in "…" so the points stay on the same line. */
+.leaderboard-list, .masters-list { list-style: none; padding: 0; margin: 0; }
+.lb-row { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 7px 0; }
+.lb-rank { color: var(--muted); font-weight: 700; text-align: right; }
+.lb-who { display: flex; align-items: center; gap: 0; min-width: 0; white-space: nowrap; }
+.lb-name { overflow: hidden; text-overflow: ellipsis; margin-right: 4px; }
+.lb-who .lb-badge { flex-shrink: 0; display: inline-flex; }
+.lb-row .lb-score { color: var(--muted); white-space: nowrap; text-align: right; }
+.leaderboard-list .empty, .masters-list .empty { color: var(--muted); }
+/* A long Masters list scrolls inside its card instead of making the side cards taller */
+.masters-list { max-height: 15em; overflow-y: auto; padding-right: 6px; }
+
+/* Masters: players who earned all three badges */
+.masters { border: 2px solid var(--medium); }
+.masters h3 { margin-top: 0; }
+
+/* "Earn all 3 badges" note, pinned to the bottom of the Masters card */
+.master-goal { margin-top: auto; padding-top: 14px; text-align: center; color: var(--muted); font-weight: 600; }
+.master-goal p { margin: 0 0 8px; }
+.master-badges { display: flex; justify-content: center; gap: 14px; font-size: 1.6em; }
+.master-badges .badge-icon { margin: 0; }
+.master-shimmer {
+  font-weight: 800;
+  background: linear-gradient(100deg, var(--medium) 0%, var(--medium) 40%, #fff8d6 50%, var(--medium) 60%, var(--medium) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: master-shimmer 2.6s linear infinite;
+}
+@keyframes master-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -150% 0; }
+}
 
 /* Mission screen */
 .briefing { margin-top: 0; line-height: 1.6; color: var(--muted); }
@@ -707,10 +753,7 @@ body { overflow-x: clip; }
 .recap .clean { margin: 0; font-weight: 600; color: var(--green); }
 
 .leaderboard h3 { margin-top: 0; }
-.leaderboard li { margin: 6px 0; }
-.leaderboard .lb-score { float: right; color: var(--muted); }
-.leaderboard .lb-badge .badge-icon { margin: 0 0 0 0.15em; }
-.leaderboard .empty { color: var(--muted); list-style: none; margin-left: -20px; }
+.leaderboard .lb-badge .badge-icon { margin: 0 0 0 0.1em; }
 
 /* ---------- Phones: top bar on two neat lines ----------
    Line 1: logo + name on the left, Trusted contacts on the right.

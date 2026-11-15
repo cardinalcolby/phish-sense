@@ -126,7 +126,7 @@ async function apiLeaderboard() {
     try { board = JSON.parse(localStorage.getItem("ps-board") || "{}"); } catch (e) {}
     return Object.values(board)
       .sort((a, b) => b.badges.length - a.badges.length || b.total_score - a.total_score)
-      .slice(0, 10);
+      .slice(0, 50);   // same cap as the server
   }
   return fetch("/api/leaderboard").then((r) => r.json());
 }
@@ -1116,17 +1116,34 @@ $("btn-home").addEventListener("click", () => show("start-screen"));
 
 // ---------- Leaderboard ----------
 // The same list is shown on the home screen and the end screen.
+const LEADERBOARD_SHOWN = 7;   // rows shown, so the card doesn't run too tall
+const isMasterPlayer = (p) => ALL_MODES.every((b) => p.badges.includes(b));
+
+// One row: rank (or trophy) | name + badge icons | points
+function leaderboardRow(lead, p, withIcons) {
+  const icons = withIcons
+    ? p.badges.filter((m) => BADGES[m])
+        .map((m) => `<span class="lb-badge" title="${BADGES[m]} badge">${badgeIcon(m)}</span>`).join("") +
+      (isMasterPlayer(p) ? '<span class="lb-badge" title="PhishSense Master">🏆</span>' : "")
+    : "";
+  return `<li class="lb-row"><span class="lb-rank">${lead}</span>` +
+    `<span class="lb-who"><b class="lb-name" title="${esc(p.username)}">${esc(p.username)}</b>${icons}</span>` +
+    `<span class="lb-score">${p.total_score} pts</span></li>`;
+}
+
 async function loadLeaderboard() {
   const rows = await apiLeaderboard();
   const html = rows.length
-    ? rows.map((p) => {
-        const icons = p.badges.filter((m) => BADGES[m])
-          .map((m) => `<span class="lb-badge" title="${BADGES[m]} badge">${badgeIcon(m)}</span>`).join("");
-        const master = ALL_MODES.every((b) => p.badges.includes(b)) ? " 🏆" : "";
-        return `<li><b>${esc(p.username)}</b> ${icons}${master} <span class="lb-score">${p.total_score} pts</span></li>`;
-      }).join("")
+    ? rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
     : '<li class="empty">No scores yet. Be the first!</li>';
   document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));
+
+  // Home screen: Masters (all three badges) also get their own list,
+  // taken from every player the server sent, not just the top 7
+  const masters = rows.filter(isMasterPlayer);
+  $("start-screen").querySelector(".masters-list").innerHTML = masters.length
+    ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
+    : '<li class="empty">No Masters yet. Be the first!</li>';
 }
 
 const ready = checkBackend();
