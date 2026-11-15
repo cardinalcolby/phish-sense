@@ -131,7 +131,7 @@ function localBoard() {
   return Object.values(board);
 }
 
-// Leaderboard: rows from the scores table (most badges, then highest score)
+// Leaderboard: rows from the leaderboard table (most badges, then highest score)
 async function apiLeaderboard() {
   if (OFFLINE) {
     return localBoard()
@@ -141,7 +141,7 @@ async function apiLeaderboard() {
   return getJson("/api/leaderboard");
 }
 
-// Masters: players in the scores table with all three badges
+// Masters: players in the leaderboard table with all three badges
 async function apiMasters() {
   if (OFFLINE) {
     return localBoard()

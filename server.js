@@ -49,9 +49,9 @@ async function prepareDatabase() {
     console.log(`Connected to database "${rows[0].name}"`);
     await db.query(fs.readFileSync(new URL("./setup.sql", import.meta.url), "utf8"));
     const { rows: counts } = await db.query(
-      `SELECT (SELECT COUNT(*) FROM scenarios)::int AS scenarios, (SELECT COUNT(*) FROM scores)::int AS scores`
+      `SELECT (SELECT COUNT(*) FROM scenarios)::int AS scenarios, (SELECT COUNT(*) FROM leaderboard)::int AS players`
     );
-    console.log(`Database ready: ${counts[0].scenarios} scenarios, ${counts[0].scores} players`);
+    console.log(`Database ready: ${counts[0].scenarios} scenarios, ${counts[0].players} players`);
   } catch (err) {
     console.error("DATABASE NOT READY:", err.message || err.code || err);
   }
@@ -198,10 +198,10 @@ app.post("/api/score", safe(async (req, res) => {
   const badge = req.body.badge ? [req.body.badge] : [];
   if (!username) return res.status(400).json({ error: "Username required" });
   const { rows } = await db.query(
-    `INSERT INTO scores (username, total_score, badges) VALUES ($1, $2, $3)
+    `INSERT INTO leaderboard (username, total_score, badges) VALUES ($1, $2, $3)
      ON CONFLICT (username) DO UPDATE SET
-       total_score = scores.total_score + EXCLUDED.total_score,
-       badges = ARRAY(SELECT DISTINCT unnest(scores.badges || EXCLUDED.badges)),
+       total_score = leaderboard.total_score + EXCLUDED.total_score,
+       badges = ARRAY(SELECT DISTINCT unnest(leaderboard.badges || EXCLUDED.badges)),
        updated_at = now()
      RETURNING *`,
     [username, points, badge]
@@ -212,7 +212,7 @@ app.post("/api/score", safe(async (req, res) => {
 // 4. Leaderboard (most badges first, then highest score)
 app.get("/api/leaderboard", safe(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT username, total_score, badges FROM scores
+    `SELECT username, total_score, badges FROM leaderboard
       ORDER BY cardinality(badges) DESC, total_score DESC LIMIT 50`
   );
   res.json(rows);
@@ -221,7 +221,7 @@ app.get("/api/leaderboard", safe(async (req, res) => {
 // 5. PhishSense Masters: every player with all three badges, highest score first
 app.get("/api/masters", safe(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT username, total_score, badges FROM scores
+    `SELECT username, total_score, badges FROM leaderboard
       WHERE badges @> $1::text[]
       ORDER BY total_score DESC, updated_at ASC LIMIT 50`,
     [MODES]
@@ -236,7 +236,7 @@ app.get("/api/health", async (req, res) => {
     const { rows } = await db.query(
       `SELECT current_database() AS database,
               (SELECT COUNT(*) FROM scenarios)::int AS scenarios,
-              (SELECT COUNT(*) FROM scores)::int AS players`
+              (SELECT COUNT(*) FROM leaderboard)::int AS players`
     );
     res.json({ ok: true, ...rows[0] });
   } catch (err) {
