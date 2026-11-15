@@ -398,8 +398,9 @@ window.addEventListener("resize", placePeek);
 // last tip) or skips (Skip tutorial, Escape, or "?" while it's open).
 // Anything else that closes it (Start mission, Change difficulty) does not
 // save, so it shows again next time they reach the briefing.
-// (New key name: this six-step version should show once for everyone.)
-const TUTORIAL_KEY = "ps-tutorial-seen-v4";
+// It's remembered per player name, so every new player on the same browser
+// (say, someone trying the game after you) gets it automatically.
+const TUTORIAL_KEY = "ps-tutorial-seen-players";
 const canHover = () => window.matchMedia("(hover: hover)").matches;
 const inSample = (sel) => document.querySelector(`#sample-message ${sel}`);
 
@@ -444,11 +445,22 @@ const TUTORIAL_STEPS = [
   },
 ];
 
+// Names are matched ignoring capital letters and extra spaces ("Sam " = "sam").
+const playerKey = () => $("username").value.trim().replace(/\s+/g, " ").toLowerCase();
+function seenPlayers() {
+  try {
+    const list = JSON.parse(localStorage.getItem(TUTORIAL_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
 function tutorialSeen() {
-  try { return localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (e) { return false; }
+  return seenPlayers().includes(playerKey());
 }
 function markTutorialSeen() {
-  try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (e) {}
+  const list = seenPlayers();
+  if (list.includes(playerKey())) return;
+  list.push(playerKey());
+  try { localStorage.setItem(TUTORIAL_KEY, JSON.stringify(list)); } catch (e) {}
 }
 
 const tut = document.createElement("div");
