@@ -1,0 +1,13 @@
+<pasted_content id="9cc9">
+Add a short first-round tutorial on the play screen. Front end only (public/ files), do not touch api/, lib/, or server.js.
+
+1. The first time a player starts a run (track with localStorage, wrapped in try/catch), show 3 small tooltip-style callouts one at a time, each with a "Got it" button:
+   - Pointing at the sender: "Check who it's really from. Compare it to your trusted contacts."
+   - Pointing at a link (or the message body if there's no link): "Hover links to see where they really go."
+   - Pointing at the Phish and Legit buttons: "Decide: Phish or Legit?"
+2. Add a "Skip tutorial" link on each callout.
+3. Add a small "?" button near Trusted contacts that replays the tutorial.
+4. Match the existing card style and teal accent. Make sure callouts fit on phones under 900px.
+
+Test at 1920x1080 and 375px phone width. Commit with "Add first-round tutorial" and push to Abigail_Front_End_Work.
+</pasted_content id="9cc9">
