@@ -1,0 +1,42 @@
+push current version to Abigail branch
+
+---
+
+return to new features version now
+
+---
+
+<pasted_content id="9cc9">
+Please bring back the mission-screen tutorial with the example inbox that was removed in the "Fix tutorial callout placement" commit. The tutorial was moved to the mission screen on purpose because it didn't run reliably on the play screen, so keep it on the mission screen using the fixed example email. Do not run the tutorial on the play screen.
+
+Keep the placement fixes:
+1. Callouts never cover text or buttons (including the "How to..." heading and the "? Show..." button). Place each one in open space next to its target, with the arrow pointing at it.
+2. The teal highlight fits tightly around the target (for example, just the sender line), not the full email width.
+3. Scroll the target into view before showing each callout, and keep callouts on screen on phones under 900px.
+
+Also make the example inbox section compact so the Start mission button is easy to find, and keep the "? Show..." replay button working.
+
+Test in a fresh state (clear the tutorial localStorage key) at 1920x1080, 1366x768, and 375px. Commit with "Restore mission-screen tutorial with fixed placement" and push to Abigail_Front_End_Work.
+</pasted_content id="9cc9">
+
+---
+
+<pasted_content id="9cc9">
+Update the mission-screen tutorial so it also covers the new features. Keep it on the mission screen with the fixed example email, and keep all the placement rules (callouts never cover text or buttons, tight highlight around the target, scroll into view first, fits on phones under 900px).
+
+Tutorial steps, one at a time, each with "Got it" and "Skip tutorial":
+1. Sender line: "Check who it's really from. Compare it to your trusted contacts."
+2. Trusted contacts panel: "These are the real websites and phone numbers. If a message doesn't match, be suspicious."
+3. Link in the example email: "Hover a link to see where it really goes. Look at the main domain."
+4. Phish and Legit buttons (show example buttons under the example email if needed): "Decide: Phish or Legit? On a keyboard, use ← for Phish and → for Legit."
+5. Progress dots (show a small example row: one ✓, one ✗, one current): "✓ means you got it right, ✗ means you got hooked or were too cautious."
+6. Sound toggle and "?" button in the header: "Turn sound on here, and press ? anytime to replay this tutorial." (Only include the sound part if the sound toggle exists.)
+
+Show "Tip X of 6" (or the actual number of steps) at the top of each callout. Enter presses "Got it". Save the "seen" flag only after the player finishes or skips.
+
+Test in a fresh state (clear the tutorial localStorage key) at 1920x1080, 1366x768, and 375px. Commit with "Tutorial covers new features" and push to Abigail_Front_End_Work.
+</pasted_content id="9cc9">
+
+---
+
+we need to be on the new features branch not the abigail branch
