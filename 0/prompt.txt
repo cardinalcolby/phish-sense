@@ -1,0 +1,28 @@
+<pasted_content id="3d3d">
+Color-code the three difficulty levels. No libraries, keep everything else the same.
+
+1. Colors (define as CSS variables so they're reused everywhere):
+   - Easy / Minnow: green #4ade80
+   - Medium / Angler: yellow #facc15
+   - Hard / Captain: red #f87171
+
+2. Difficulty buttons on the home screen: give each button a border in its own color instead of teal, with a light tint of that color on hover. Keep the dark card background so the text stays readable.
+
+3. Badge icons: replace the fish, fishing-pole, and anchor emojis with simple inline SVG icons (a small fish, a fishing hook or rod, an anchor) that use currentColor, so the minnow is green, the angler is yellow, and the captain anchor is red. Use these icons everywhere badges show up: the difficulty buttons, the mission screen title, the leaderboard, the badge reveal, and the end screen.
+
+4. On the mission screen, color the "Easy mode · Minnow badge" title line to match the chosen difficulty.
+
+5. Keep the teal brand color for the logo, Start mission, Next, and other main buttons.
+
+Check that the colors are readable on the dark background at 1920x1080 and 375px phone width. Commit with "Color-code difficulty levels and badge icons" and push to the same branch.
+</pasted_content id="3d3d">
+
+---
+
+<task-notification>
+<task-id>brrb4gki0</task-id>
+<tool-use-id>toolu_015qCLYsYKunbfGeSFwus7Kw</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\brrb4gki0.output</output-file>
+<status>completed</status>
+<summary>Background command "Start a static server for the public folder" completed (exit code 0)</summary>
+</task-notification>
