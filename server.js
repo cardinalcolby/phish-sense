@@ -49,9 +49,10 @@ async function prepareDatabase() {
     console.log(`Connected to database "${rows[0].name}"`);
     await db.query(fs.readFileSync(new URL("./setup.sql", import.meta.url), "utf8"));
     const { rows: counts } = await db.query(
-      `SELECT (SELECT COUNT(*) FROM scenarios)::int AS scenarios, (SELECT COUNT(*) FROM leaderboard)::int AS players`
+      `SELECT (SELECT COUNT(*) FROM scenarios)::int AS scenarios, (SELECT COUNT(*) FROM leaderboard)::int AS players,
+              (SELECT COUNT(*) FROM scores)::int AS games`
     );
-    console.log(`Database ready: ${counts[0].scenarios} scenarios, ${counts[0].players} players`);
+    console.log(`Database ready: ${counts[0].scenarios} scenarios, ${counts[0].players} players, ${counts[0].games} games`);
   } catch (err) {
     console.error("DATABASE NOT READY:", err.message || err.code || err);
   }
@@ -191,29 +192,91 @@ app.post("/api/answer", safe(async (req, res) => {
   });
 }));
 
-// 3. Save a finished run (adds points, and the badge if they earned it)
+// Same rules as public/app.js. The server works out points and badges itself,
+// so a player can't send a made-up score.
+const ROUNDS = 5;
+const TO_PASS = 4;
+const PER_CORRECT = 100;
+const cleanName = (v) => String(v || "").trim().replace(/\s+/g, " ").slice(0, 20);
+
+// Every player with their totals plus stats from their games in "scores".
+// Most badges first, then highest score.
+const PLAYER_SELECT = `
+  SELECT l.username, l.total_score, l.badges, l.updated_at,
+         COALESCE(g.games_played, 0)::int AS games_played,
+         COALESCE(g.best_points, 0)::int  AS best_points,
+         g.last_played
+    FROM leaderboard l
+    LEFT JOIN (SELECT username, COUNT(*) AS games_played, MAX(points) AS best_points,
+                      MAX(played_at) AS last_played
+                 FROM scores GROUP BY username) g ON g.username = l.username`;
+
+// 3. Save a finished game: one row in "scores", and the points and badge are
+// added to the player's "leaderboard" row. Both happen in one transaction.
+// Body: { username, mode, correct, run_id? }
 app.post("/api/score", safe(async (req, res) => {
-  const username = String(req.body.username || "").trim().slice(0, 20);
-  const points = Number(req.body.points) || 0;
-  const badge = req.body.badge ? [req.body.badge] : [];
+  const username = cleanName(req.body.username);
+  const mode = req.body.mode;
+  const correct = Number(req.body.correct);
+  const runId = req.body.run_id ? String(req.body.run_id).slice(0, 64) : null;
+  const playedAt = Date.parse(req.body.played_at);
   if (!username) return res.status(400).json({ error: "Username required" });
-  const { rows } = await db.query(
-    `INSERT INTO leaderboard (username, total_score, badges) VALUES ($1, $2, $3)
-     ON CONFLICT (username) DO UPDATE SET
-       total_score = leaderboard.total_score + EXCLUDED.total_score,
-       badges = ARRAY(SELECT DISTINCT unnest(leaderboard.badges || EXCLUDED.badges)),
-       updated_at = now()
-     RETURNING *`,
-    [username, points, badge]
-  );
-  res.json(rows[0]);
+  if (!MODES.includes(mode)) return res.status(400).json({ error: "Unknown mode" });
+  if (!Number.isInteger(correct) || correct < 0 || correct > ROUNDS) {
+    return res.status(400).json({ error: "Bad number of correct answers" });
+  }
+  const points = correct * PER_CORRECT;
+  const passed = correct >= TO_PASS;
+  const badge = passed ? mode : null;
+  // A game saved late (it was played while the database was down) keeps its
+  // real time, as long as that time is in the past.
+  const when = Number.isFinite(playedAt) && playedAt <= Date.now() ? new Date(playedAt) : new Date();
+
+  const client = await db.connect();
+  let game;
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `INSERT INTO leaderboard (username) VALUES ($1) ON CONFLICT (username) DO NOTHING`,
+      [username]
+    );
+    const inserted = await client.query(
+      `INSERT INTO scores (run_id, username, mode, correct, rounds, points, passed, badge, played_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (run_id) DO NOTHING
+       RETURNING *`,
+      [runId, username, mode, correct, ROUNDS, points, passed, badge, when]
+    );
+    game = inserted.rows[0];
+    if (game) {
+      await client.query(
+        `UPDATE leaderboard SET
+           total_score = total_score + $2,
+           badges = CASE WHEN $3::text IS NULL OR $3 = ANY(badges) THEN badges ELSE badges || $3::text END,
+           updated_at = now()
+         WHERE username = $1`,
+        [username, points, badge]
+      );
+    } else {
+      // Same run_id was already saved (a retry): return that game, add nothing
+      game = (await client.query(`SELECT * FROM scores WHERE run_id = $1`, [runId])).rows[0];
+    }
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const { rows } = await db.query(`${PLAYER_SELECT} WHERE l.username = $1`, [username]);
+  res.json({ ...rows[0], game });
 }));
 
-// 4. Leaderboard (most badges first, then highest score)
+// 4. Leaderboard: every player in the database (most badges, then highest score)
 app.get("/api/leaderboard", safe(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT username, total_score, badges FROM leaderboard
-      ORDER BY cardinality(badges) DESC, total_score DESC LIMIT 50`
+    `${PLAYER_SELECT} ORDER BY cardinality(l.badges) DESC, l.total_score DESC, l.updated_at ASC`
   );
   res.json(rows);
 }));
@@ -221,22 +284,48 @@ app.get("/api/leaderboard", safe(async (req, res) => {
 // 5. PhishSense Masters: every player with all three badges, highest score first
 app.get("/api/masters", safe(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT username, total_score, badges FROM leaderboard
-      WHERE badges @> $1::text[]
-      ORDER BY total_score DESC, updated_at ASC LIMIT 50`,
+    `${PLAYER_SELECT} WHERE l.badges @> $1::text[] ORDER BY l.total_score DESC, l.updated_at ASC`,
     [MODES]
   );
   res.json(rows);
 }));
 
-// 6. Health check: is the database reachable and are the tables there?
+// 6. One player after a game: their totals and their recent games
+app.get("/api/players/:username", safe(async (req, res) => {
+  const username = cleanName(req.params.username);
+  const { rows } = await db.query(`${PLAYER_SELECT} WHERE l.username = $1`, [username]);
+  if (!rows[0]) return res.status(404).json({ error: "Player not found" });
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 200);
+  const { rows: games } = await db.query(
+    `SELECT score_id, mode, correct, rounds, points, passed, badge, played_at
+       FROM scores WHERE username = $1 ORDER BY played_at DESC LIMIT $2`,
+    [username, limit]
+  );
+  res.json({ ...rows[0], games });
+}));
+
+// 7. Recent games from everyone (newest first). ?username= narrows it to one player.
+app.get("/api/scores", safe(async (req, res) => {
+  const username = req.query.username ? cleanName(req.query.username) : null;
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 500);
+  const { rows } = await db.query(
+    `SELECT score_id, username, mode, correct, rounds, points, passed, badge, played_at
+       FROM scores WHERE ($1::text IS NULL OR username = $1)
+      ORDER BY played_at DESC LIMIT $2`,
+    [username, limit]
+  );
+  res.json(rows);
+}));
+
+// 8. Health check: is the database reachable and are the tables there?
 // Shows counts only, never connection details.
 app.get("/api/health", async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT current_database() AS database,
               (SELECT COUNT(*) FROM scenarios)::int AS scenarios,
-              (SELECT COUNT(*) FROM leaderboard)::int AS players`
+              (SELECT COUNT(*) FROM leaderboard)::int AS players,
+              (SELECT COUNT(*) FROM scores)::int AS games`
     );
     res.json({ ok: true, ...rows[0] });
   } catch (err) {
