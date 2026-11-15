@@ -1,0 +1,1 @@
+Update my ReadMe to remove all references of Vercel. My app runs on Vultr pointing to a https GoDaddy custom domain "https://phishsense.design/" and my backend is designed to store data on the local device if it is unable to pull data from the Postgres databse
