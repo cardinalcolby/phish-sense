@@ -94,25 +94,17 @@ async function getJson(url) {
   return r.json();
 }
 
+// Scenarios always come from memory (mock-data.js), not the database, so the
+// game loop works whether or not the backend/database is reachable.
 async function apiGetScenario(mode, seen) {
-  if (OFFLINE) {
-    const pool = MOCK_SCENARIOS.filter((s) => s.difficulty === mode && !seen.includes(s.scenario_id));
-    const s = pool[Math.floor(Math.random() * pool.length)];
-    return { scenario_id: s.scenario_id, channel: s.channel, sender: s.sender, subject: s.subject, body: s.body, link: s.link };
-  }
-  return fetch(`/api/scenario?mode=${mode}&seen=${seen.join(",")}`).then((r) => r.json());
+  const pool = MOCK_SCENARIOS.filter((s) => s.difficulty === mode && !seen.includes(s.scenario_id));
+  const s = pool[Math.floor(Math.random() * pool.length)];
+  return { scenario_id: s.scenario_id, channel: s.channel, sender: s.sender, subject: s.subject, body: s.body, link: s.link };
 }
 
 async function apiAnswer(scenario_id, guess) {
-  if (OFFLINE) {
-    const s = MOCK_SCENARIOS.find((x) => x.scenario_id === scenario_id);
-    return { correct: guess === s.game_answer, game_answer: s.game_answer, red_flags: s.red_flags, explanation: s.explanation };
-  }
-  return fetch("/api/answer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scenario_id, guess }),
-  }).then((r) => r.json());
+  const s = MOCK_SCENARIOS.find((x) => x.scenario_id === scenario_id);
+  return { correct: guess === s.game_answer, game_answer: s.game_answer, red_flags: s.red_flags, explanation: s.explanation };
 }
 
 async function apiSaveScore(username, points, badge) {
