@@ -3,8 +3,35 @@
 const ROUNDS = 5;        // rounds per mode
 const TO_PASS = 4;       // correct answers needed for the badge
 const PER_CORRECT = 100; // points per correct answer
-const BADGES = { easy: "🐟 Minnow", medium: "🎣 Angler", hard: "⚓ Captain" };
+const BADGES = { easy: "Minnow", medium: "Angler", hard: "Captain" };
 const ALL_MODES = ["easy", "medium", "hard"];
+
+// Badge icons: simple inline SVGs drawn in currentColor, so each one takes
+// its difficulty color from CSS (.tier-easy green, .tier-medium yellow, .tier-hard red).
+const BADGE_SVG = {
+  // Minnow: a small fish
+  easy: `<ellipse cx="13.5" cy="12" rx="7.5" ry="4.8" fill="currentColor"/>
+    <path d="M7 12 1.5 7v10z" fill="currentColor"/>
+    <circle cx="17" cy="10.8" r="1.1" fill="#0a1a33"/>`,
+  // Angler: a fishing rod with its line and hook
+  medium: `<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 21 19 3" stroke-width="2.4"/>
+    <circle cx="7" cy="16.5" r="2.2" stroke-width="2"/>
+    <path d="M19 3v11.5" stroke-width="1.3"/>
+    <path d="M19 14.5v2.3a2.2 2.2 0 0 1-4.4 0v-.8" stroke-width="2"/></g>`,
+  // Captain: an anchor
+  hard: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="4.6" r="2.2"/>
+    <path d="M12 6.8V21M8 10h8M4.5 13.5c0 4.3 3.2 7.5 7.5 7.5s7.5-3.2 7.5-7.5"/>
+    <path d="M2.5 15.5l2-2 2 2M17.5 15.5l2-2 2 2"/></g>`,
+};
+const badgeIcon = (m) =>
+  `<svg class="badge-icon tier-${m}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${BADGE_SVG[m]}</svg>`;
+// Icon + name, e.g. for "You earned [fish] Minnow!"
+const badgeLabel = (m) => `<span class="badge-label tier-${m}">${badgeIcon(m)}${BADGES[m]}</span>`;
+
+// Fill every placeholder like <span data-badge-icon="easy"> (the difficulty buttons)
+document.querySelectorAll("[data-badge-icon]").forEach((el) => (el.innerHTML = badgeIcon(el.dataset.badgeIcon)));
 const MISSIONS = {
   easy: "Warm-up shift. These scams are obvious: watch for typos, surprise prizes, and ALL CAPS urgency.",
   medium: "Scammers are getting smarter. Check every sender address and phone number against the real ones above.",
@@ -138,7 +165,8 @@ document.querySelectorAll(".mode").forEach((btn) =>
     if (!$("username").value.trim()) return $("username").focus();
     mode = btn.dataset.mode;
     const label = mode.charAt(0).toUpperCase() + mode.slice(1);
-    $("mission-mode").textContent = `${label} mode · ${BADGES[mode]} badge`;
+    $("mission-mode").className = `mission-mode tier-${mode}`;
+    $("mission-mode").innerHTML = `${label} mode · ${badgeIcon(mode)}${BADGES[mode]} badge`;
     $("mission-tip").textContent = MISSIONS[mode];
     show("mission-screen");
   })
@@ -623,9 +651,9 @@ function burstConfetti() {
 }
 
 function revealBadge(isMaster) {
-  const [icon, ...name] = BADGES[mode].split(" ");
-  $("badge-art").textContent = icon;
-  $("badge-name").textContent = name.join(" ");
+  $("badge-art").innerHTML = badgeIcon(mode);
+  $("badge-name").textContent = BADGES[mode];
+  $("badge-name").className = `badge-name tier-${mode}`;
   $("badge-reveal").classList.remove("hidden");
   replayAnimation($("badge-art"));
   replayAnimation($("badge-name"));
@@ -676,10 +704,10 @@ async function finish() {
   const owned = Array.isArray(player?.badges) ? player.badges : (passed ? [mode] : []);
   const isMaster = ALL_MODES.every((m) => owned.includes(m));
 
-  $("end-title").textContent = passed ? `You earned ${BADGES[mode]}!` : `${correct} of ${ROUNDS} correct`;
-  $("end-text").textContent = passed
+  $("end-title").innerHTML = passed ? `You earned ${badgeLabel(mode)}!` : `${correct} of ${ROUNDS} correct`;
+  $("end-text").innerHTML = passed
     ? "Nice catch. Try the next mode!"
-    : `You need ${TO_PASS} to earn ${BADGES[mode]}. Every round is new, so try again!`;
+    : `You need ${TO_PASS} to earn ${badgeLabel(mode)}. Every round is new, so try again!`;
 
   if (passed) revealBadge(isMaster);
   else showMissedBadge();
@@ -697,9 +725,10 @@ async function loadLeaderboard() {
   const rows = await apiLeaderboard();
   const html = rows.length
     ? rows.map((p) => {
-        const icons = p.badges.map((b) => BADGES[b]?.split(" ")[0] || "").join(" ");
+        const icons = p.badges.filter((m) => BADGES[m])
+          .map((m) => `<span class="lb-badge" title="${BADGES[m]} badge">${badgeIcon(m)}</span>`).join("");
         const master = ALL_MODES.every((b) => p.badges.includes(b)) ? " 🏆" : "";
-        return `<li><b>${esc(p.username)}</b> ${icons}${master} <span>${p.total_score} pts</span></li>`;
+        return `<li><b>${esc(p.username)}</b> ${icons}${master} <span class="lb-score">${p.total_score} pts</span></li>`;
       }).join("")
     : '<li class="empty">No scores yet. Be the first!</li>';
   document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));

@@ -7,6 +7,13 @@
   --muted: #9fb7c9;
   --red: #ff5d6c;
   --green: #3ddc84;
+  /* Difficulty colors: buttons, badge icons, mission title */
+  --easy: #4ade80;     /* Minnow */
+  --medium: #facc15;   /* Angler */
+  --hard: #f87171;     /* Captain */
+  --easy-tint: rgba(74, 222, 128, 0.14);
+  --medium-tint: rgba(250, 204, 21, 0.14);
+  --hard-tint: rgba(248, 113, 113, 0.14);
   --fit-h: none; /* set on large screens: the height a screen must fit in */
 }
 
@@ -90,6 +97,7 @@ body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap unde
 .briefing b { color: var(--text); }
 .briefing-title { font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--teal) !important; }
 .mission-mode { font-size: 20px; font-weight: 800; color: var(--text); }
+.mission-mode.tier-easy, .mission-mode.tier-medium, .mission-mode.tier-hard { color: var(--tier); }
 .facts { padding: 10px 14px; border-left: 3px solid var(--teal); background: rgba(45, 224, 196, 0.08); border-radius: 6px; }
 .mission-buttons { display: flex; justify-content: space-between; gap: 12px; }
 button.secondary { background: transparent; color: var(--text); border: 2px solid var(--navy-2); }
@@ -108,7 +116,26 @@ button {
 button:disabled { opacity: 0.5; cursor: default; }
 
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.mode { padding: 18px 8px; background: var(--navy-2); color: var(--text); border: 2px solid var(--teal); }
+/* Each difficulty sets --tier; anything tagged with it (icons, the mission title) uses that color */
+.tier-easy { --tier: var(--easy); --tier-tint: var(--easy-tint); }
+.tier-medium { --tier: var(--medium); --tier-tint: var(--medium-tint); }
+.tier-hard { --tier: var(--hard); --tier-tint: var(--hard-tint); }
+.tier-easy, .tier-medium, .tier-hard { color: var(--tier); }
+
+/* Badge icon: sized to the text around it, drawn in currentColor */
+.badge-icon { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.3em; }
+.badge-label { white-space: nowrap; }
+
+/* Difficulty buttons: colored border, light tint on hover, text stays white on the dark card */
+button.mode {
+  padding: 18px 8px; background: var(--navy-2); color: var(--text); border: 2px solid var(--tier);
+  transition: background-color 0.15s ease;
+}
+button.mode:hover, button.mode:focus-visible {
+  background: linear-gradient(var(--tier-tint), var(--tier-tint)) var(--navy-2);
+}
+button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px; }
+.mode .badge-icon { width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 .mode small { color: var(--muted); font-weight: 400; }
 
 /* Our card style (named ps-card so Bootstrap's .card doesn't restyle it) */
@@ -474,6 +501,7 @@ body { overflow-x: clip; }
 .badge-reveal { position: relative; padding: 10px 0 2px; }
 .badge-art {
   font-size: 96px; line-height: 1.1;
+  display: flex; justify-content: center;
   animation: badge-drop 1.1s cubic-bezier(0.2, 0.75, 0.3, 1) both;
 }
 .badge-name:empty { display: none; }
@@ -481,6 +509,8 @@ body { overflow-x: clip; }
   margin: 2px 0 0; font-size: 26px; font-weight: 800; color: var(--teal);
   animation: fade-rise 0.5s ease-out 0.75s both;
 }
+.badge-art .badge-icon { width: 1em; height: 1em; margin: 0; vertical-align: 0; }
+.badge-name.tier-easy, .badge-name.tier-medium, .badge-name.tier-hard { color: var(--tier); }
 .badge-master {
   display: inline-block; margin: 14px 0 0; padding: 8px 16px;
   border: 2px solid var(--teal); border-radius: 999px;
@@ -522,7 +552,8 @@ body { overflow-x: clip; }
 
 .leaderboard h3 { margin-top: 0; }
 .leaderboard li { margin: 6px 0; }
-.leaderboard span { float: right; color: var(--muted); }
+.leaderboard .lb-score { float: right; color: var(--muted); }
+.leaderboard .lb-badge .badge-icon { margin: 0 0 0 0.15em; }
 .leaderboard .empty { color: var(--muted); list-style: none; margin-left: -20px; }
 
 /* ---------- Phones: top bar on two neat lines ----------
