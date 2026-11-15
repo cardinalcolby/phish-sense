@@ -630,6 +630,64 @@ body { overflow-x: clip; }
   .hook-rig { display: none; }
 }
 
+/* ---------- Ocean background: waves + side bubbles ----------
+   Fixed behind all content (z-index -1 sits above the page color but under everything else),
+   and pointer-events: none so it never blocks clicks or the fish cursor. */
+.ocean-bg {
+  position: fixed; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+}
+.wave {
+  position: absolute; left: 0; bottom: 0;
+  width: 200%; height: 18vh; min-height: 90px;
+  display: block;
+  animation: wave-roll linear infinite;
+  will-change: transform;
+}
+.wave-back  { fill: var(--teal);   opacity: 0.08; animation-duration: 30s; }
+.wave-mid   { fill: var(--navy-2); opacity: 0.15; animation-duration: 22s; animation-direction: reverse; height: 15vh; min-height: 75px; }
+.wave-front { fill: var(--teal);   opacity: 0.1;  animation-duration: 16s; height: 12vh; min-height: 60px; }
+/* Each wave is two identical periods wide: sliding by half its width lands on an identical frame */
+@keyframes wave-roll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.bg-bubble {
+  position: absolute; bottom: -24px;
+  width: var(--size); height: var(--size); border-radius: 50%;
+  border: 1.5px solid rgba(45, 224, 196, 0.5);
+  background: radial-gradient(circle at 30% 30%, rgba(233, 241, 247, 0.5), rgba(45, 224, 196, 0.1) 65%);
+  opacity: 0;
+  animation: bg-bubble-rise var(--dur) linear var(--delay) infinite;
+}
+/* Left edge */
+.bg-bubble.b1 { left: 1.5vw; --size: 10px; --dur: 19s; --delay: -2s; }
+.bg-bubble.b2 { left: 3.5vw; --size: 6px;  --dur: 24s; --delay: -11s; }
+.bg-bubble.b3 { left: 2vw;   --size: 14px; --dur: 28s; --delay: -19s; }
+/* Right edge */
+.bg-bubble.b4 { right: 2vw;   --size: 8px;  --dur: 21s; --delay: -6s; }
+.bg-bubble.b5 { right: 3.5vw; --size: 12px; --dur: 26s; --delay: -15s; }
+.bg-bubble.b6 { right: 1.5vw; --size: 6px;  --dur: 18s; --delay: -9s; }
+@keyframes bg-bubble-rise {
+  0%   { opacity: 0;    transform: translate(0, 0); }
+  10%  { opacity: 0.14; }
+  50%  { transform: translate(6px, -55vh); }
+  85%  { opacity: 0.14; }
+  100% { opacity: 0;    transform: translate(-4px, -110vh); }
+}
+
+/* Phones and narrow windows: waves only, no side bubbles */
+@media (max-width: 899.98px) {
+  .bg-bubble { display: none; }
+}
+
+/* Reduced motion: waves stay, but hold still; bubbles are hidden */
+@media (prefers-reduced-motion: reduce) {
+  .wave { animation: none !important; }
+  .bg-bubble { display: none; }
+}
+
 /* ---------- Fish cursor (home screen only, see fish-cursor.js) ---------- */
 body.fish-mode, body.fish-mode * { cursor: none !important; }
 .fish-cursor {

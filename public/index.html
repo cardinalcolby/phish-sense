@@ -12,6 +12,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-screen="start-screen">
+  <!-- Decorative ocean background: fixed behind everything, never takes clicks.
+       Each wave is two identical periods wide and slides left by one period, so the loop has no jump. -->
+  <div class="ocean-bg" aria-hidden="true">
+    <svg class="wave wave-back" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 90 C240 40 480 40 720 90 C960 140 1200 140 1440 90 C1680 40 1920 40 2160 90 C2400 140 2640 140 2880 90 V200 H0 Z" />
+    </svg>
+    <svg class="wave wave-mid" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 110 C120 80 240 80 360 110 C480 140 600 140 720 110 C840 80 960 80 1080 110 C1200 140 1320 140 1440 110 C1560 80 1680 80 1800 110 C1920 140 2040 140 2160 110 C2280 80 2400 80 2520 110 C2640 140 2760 140 2880 110 V200 H0 Z" />
+    </svg>
+    <svg class="wave wave-front" viewBox="0 0 2880 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 140 C180 115 540 115 720 140 C900 165 1260 165 1440 140 C1620 115 1980 115 2160 140 C2340 165 2700 165 2880 140 V200 H0 Z" />
+    </svg>
+    <span class="bg-bubble b1"></span>
+    <span class="bg-bubble b2"></span>
+    <span class="bg-bubble b3"></span>
+    <span class="bg-bubble b4"></span>
+    <span class="bg-bubble b5"></span>
+    <span class="bg-bubble b6"></span>
+  </div>
+
   <!-- Big header: home screen only -->
   <header class="hero">
     <img src="logo-badge.svg" alt="PhishSense logo" class="logo" />
