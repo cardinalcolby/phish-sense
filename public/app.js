@@ -1144,6 +1144,9 @@ async function loadLeaderboard() {
   $("start-screen").querySelector(".masters-list").innerHTML = masters.length
     ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
     : '<li class="empty">No Masters yet. Be the first!</li>';
+  // Only 1 or 2 Masters: a soft nudge underneath so the card doesn't look empty
+  $("start-screen").querySelector(".masters-join")
+    .classList.toggle("hidden", !(masters.length === 1 || masters.length === 2));
 }
 
 const ready = checkBackend();

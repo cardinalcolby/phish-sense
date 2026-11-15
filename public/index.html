@@ -120,6 +120,8 @@
           <button class="mode tier-medium" data-mode="medium"><span data-badge-icon="medium"></span>Medium<br /><small>Angler badge</small></button>
           <button class="mode tier-hard" data-mode="hard"><span data-badge-icon="hard"></span>Hard<br /><small>Captain badge</small></button>
         </div>
+
+        <p class="master-goal"><span aria-hidden="true">🏆</span> Earn all 3 badges to <span class="master-shimmer">become a PhishSense Master</span></p>
       </div>
 
       <section class="ps-card leaderboard home-board">
@@ -129,14 +131,10 @@
 
       <section class="ps-card masters home-masters">
         <h3><span aria-hidden="true">🏆</span> <span class="master-shimmer">PhishSense Masters</span></h3>
-        <ul class="masters-list"></ul>
-        <div class="master-goal">
-          <p>Earn all 3 badges to <span class="master-shimmer">become a PhishSense Master</span></p>
-          <div class="master-badges">
-            <span data-badge-icon="easy" title="Minnow badge"></span>
-            <span data-badge-icon="medium" title="Angler badge"></span>
-            <span data-badge-icon="hard" title="Captain badge"></span>
-          </div>
+        <!-- The list sits centered in the card; with only 1 or 2 Masters, a soft "Can you join them?" follows -->
+        <div class="masters-body">
+          <ul class="masters-list"></ul>
+          <p class="masters-join hidden">Can you join them?</p>
         </div>
       </section>
     </section>
