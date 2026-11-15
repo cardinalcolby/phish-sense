@@ -1,0 +1,12 @@
+<pasted_content id="9cc9">
+Bug: the first-round tutorial only appears when I click the "?" button. On a new player's first run it doesn't show, especially when the first scenario has no link or is a text message.
+
+Please fix it so:
+1. The tutorial always runs on a new player's first round, whether the scenario is an email or a text message, and whether or not it has a link.
+2. It waits until the scenario has finished loading and rendering before showing the first callout.
+3. If a target element doesn't exist, it falls back instead of stopping: the link step points at the message body, and the sender step points at the phone's contact name for text messages.
+4. The "seen it" flag in localStorage is saved only after the player finishes or skips the tutorial, not when it tries to start.
+5. The "?" button keeps working the same way.
+
+Test in a fresh state (clear the tutorial localStorage key) with an email with a link, an email without a link, and a text message. Commit with "Fix tutorial on first round for all scenario types" and push to Abigail_Front_End_Work.
+</pasted_content id="9cc9">
