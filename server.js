@@ -3,6 +3,7 @@
 // Needs a .env file with DATABASE_URL, GEMINI_API_KEY, and GEMINI_MODEL (see .env.example)
 
 import "dotenv/config";
+import fs from "node:fs";
 import express from "express";
 import pg from "pg";
 import { GoogleGenAI } from "@google/genai";
@@ -11,12 +12,50 @@ const app = express();
 app.use(express.json());
 app.use(express.static("public")); // serves the game (public/index.html)
 
-const db = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes("localhost") ? false : { rejectUnauthorized: false },
-});
+// ---------- Database (Vultr Managed PostgreSQL, database "appdb") ----------
+// Vultr's connection string ends in ?sslmode=require. The pg library treats
+// that as "verify-full" and it overrides the ssl option below, so the
+// connection fails on Vultr's self-signed certificate. We remove the ssl*
+// settings from the URL and set SSL here instead:
+//   - DATABASE_CA_CERT=/path/to/vultr-ca.crt  -> verify the server (recommended)
+//   - not set                                 -> encrypted, but not verified
+function dbConfig() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) {
+    console.error("DATABASE_URL is not set. Add it to .env (see .env.example).");
+    return {};
+  }
+  const url = new URL(raw);
+  for (const key of ["sslmode", "sslrootcert", "sslcert", "sslkey", "uselibpqcompat"]) url.searchParams.delete(key);
+  const local = ["localhost", "127.0.0.1"].includes(url.hostname);
+  let ssl = false;
+  if (!local) {
+    const caPath = process.env.DATABASE_CA_CERT;
+    ssl = caPath ? { ca: fs.readFileSync(caPath, "utf8"), rejectUnauthorized: true } : { rejectUnauthorized: false };
+  }
+  return { connectionString: url.toString(), ssl, connectionTimeoutMillis: 10000 };
+}
+
+const db = new pg.Pool(dbConfig());
 // A dropped idle connection must not crash the whole app.
 db.on("error", (err) => console.error("Database pool error:", err.message));
+
+// On startup: connect, create the tables if they're missing, and load the 20
+// backup scenarios if the scenarios table is empty. setup.sql is safe to run
+// more than once (CREATE TABLE IF NOT EXISTS / ON CONFLICT DO NOTHING).
+async function prepareDatabase() {
+  try {
+    const { rows } = await db.query("SELECT current_database() AS name");
+    console.log(`Connected to database "${rows[0].name}"`);
+    await db.query(fs.readFileSync(new URL("./setup.sql", import.meta.url), "utf8"));
+    const { rows: counts } = await db.query(
+      `SELECT (SELECT COUNT(*) FROM scenarios)::int AS scenarios, (SELECT COUNT(*) FROM scores)::int AS scores`
+    );
+    console.log(`Database ready: ${counts[0].scenarios} scenarios, ${counts[0].scores} players`);
+  } catch (err) {
+    console.error("DATABASE NOT READY:", err.message || err.code || err);
+  }
+}
 
 // Express 4 doesn't catch errors from async routes. Without this, one failed
 // database query crashes Node and nginx shows "502 Bad Gateway" for everyone.
@@ -122,9 +161,10 @@ app.get("/api/scenario", safe(async (req, res) => {
     row = rows[0];
   } catch (err) {
     console.log(`Using backup scenario (${err.message})`);
+    // Prefer the hand-checked scenarios; use saved Gemini ones only if those run out.
     const { rows } = await db.query(
-      `SELECT * FROM scenarios WHERE source = 'sheet' AND difficulty = $1 AND NOT (scenario_id = ANY($2::int[]))
-        ORDER BY random() LIMIT 1`,
+      `SELECT * FROM scenarios WHERE difficulty = $1 AND NOT (scenario_id = ANY($2::int[]))
+        ORDER BY (source = 'sheet') DESC, random() LIMIT 1`,
       [mode, seen]
     );
     row = rows[0];
@@ -189,5 +229,24 @@ app.get("/api/masters", safe(async (req, res) => {
   res.json(rows);
 }));
 
+// 6. Health check: is the database reachable and are the tables there?
+// Shows counts only, never connection details.
+app.get("/api/health", async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT current_database() AS database,
+              (SELECT COUNT(*) FROM scenarios)::int AS scenarios,
+              (SELECT COUNT(*) FROM scores)::int AS players`
+    );
+    res.json({ ok: true, ...rows[0] });
+  } catch (err) {
+    console.error("Health check failed:", err.message || err.code || err);
+    res.status(503).json({ ok: false, error: "Database unavailable" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`PhishSense running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`PhishSense running at http://localhost:${PORT}`);
+  prepareDatabase();
+});

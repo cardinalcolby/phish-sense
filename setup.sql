@@ -1,5 +1,7 @@
--- PhishSense database setup (Tiger Data / PostgreSQL)
--- Paste this whole file into the Tiger Data SQL editor and run it once.
+-- PhishSense database setup (Vultr Managed PostgreSQL, database "appdb")
+-- server.js runs this file every time it starts. It is safe to run again:
+-- tables are only created if missing and existing scenarios are never changed.
+-- You can also run it yourself: psql "$DATABASE_URL" -f setup.sql
 
 -- Table 1: every scenario (our 20 backups + whatever Gemini makes)
 CREATE TABLE IF NOT EXISTS scenarios (
