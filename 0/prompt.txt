@@ -1,0 +1,22 @@
+<pasted_content id="f7cf">
+Add subtle animated ocean waves to the page background. No libraries, CSS and inline SVG only. Do not change the layout, colors of the cards, or any game features.
+
+1. Put 2 or 3 layered wave shapes along the bottom of the page (about the bottom 15 to 20% of the screen), behind all content. Use the existing navy and teal palette at low opacity (around 0.08 to 0.15) so they never compete with the text or cards. Keep the waves the same colors on every screen and every difficulty.
+2. Animate them slowly sideways at different speeds (about 15 to 30 seconds per loop) so they gently roll, looping seamlessly with no jump.
+3. Add a few small bubbles that slowly float up along the left and right edges only, away from the main content, also at low opacity.
+4. Make everything position: fixed, z-index behind the content, with pointer-events: none so nothing blocks clicks or the fish cursor.
+5. Respect prefers-reduced-motion: if the user has reduced motion on, show the waves but don't animate them.
+6. On phones under 900px, keep the waves but remove the side bubbles.
+
+Check every screen (home, mission, play, end) at 1920x1080, 1366x768, and 375px phone width to make sure text stays readable. Commit with "Add animated wave background" and push to Abigail_Front_End_Work.
+</pasted_content id="f7cf">
+
+---
+
+<task-notification>
+<task-id>bjtkbrl3r</task-id>
+<tool-use-id>toolu_011h83k6tf4sNm6M6viPWvGc</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\bjtkbrl3r.output</output-file>
+<status>failed</status>
+<summary>Background command "Start the local dev server" failed with exit code 1</summary>
+</task-notification>
