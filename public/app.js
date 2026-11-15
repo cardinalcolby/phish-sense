@@ -171,6 +171,7 @@ document.querySelectorAll(".mode").forEach((btn) =>
     $("mission-mode").innerHTML = `${label} mode · ${badgeIcon(mode)}${BADGES[mode]} badge`;
     $("mission-tip").textContent = MISSIONS[mode];
     show("mission-screen");
+    maybeStartMissionTutorial();   // new players: walk through the example inbox
   })
 );
 
@@ -233,7 +234,6 @@ async function nextRound() {
   seen.push(current.scenario_id);
   $("message").innerHTML = renderMessage(current);
   $("btn-phish").disabled = $("btn-legit").disabled = false;
-  maybeStartFirstRoundTutorial();   // new players: tips on the first real message
 }
 
 // A steady clock time per scenario, so the inbox and phone look real
@@ -388,42 +388,59 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePeek()
 window.addEventListener("scroll", placePeek, { passive: true });
 window.addEventListener("resize", placePeek);
 
-// ---------- First-round tutorial ----------
-// On a new player's first round, three callouts point at the sender, the link,
-// and the Phish / Legit buttons, one at a time. The "?" button in the top bar
-// replays it. Callouts never block the game: answering closes them.
+// ---------- Tutorial (mission screen) ----------
+// Runs on the mission briefing, before "Start mission", using the example
+// inbox there (never on the play screen). Six callouts, one at a time: sender,
+// trusted contacts, link, Phish / Legit, progress dots, and the "?" button.
+// It starts by itself for a new player; the "?" in the top bar replays it.
 //
 // The "seen it" flag is saved ONLY when the player finishes (Got it on the
 // last tip) or skips (Skip tutorial, Escape, or "?" while it's open).
-// Anything else that closes it (answering, Next, leaving the screen) does not
-// save, so it comes back on their next first round.
-// (New key name, so players who saw the briefing version get this one once.)
-const TUTORIAL_KEY = "ps-tutorial-seen-v3";
+// Anything else that closes it (Start mission, Change difficulty) does not
+// save, so it shows again next time they reach the briefing.
+// (New key name: this six-step version should show once for everyone.)
+const TUTORIAL_KEY = "ps-tutorial-seen-v4";
 const canHover = () => window.matchMedia("(hover: hover)").matches;
-const inMessage = (...selectors) => {
-  for (const sel of selectors) {
-    const el = $("message").querySelector(sel);
-    if (el) return el;
-  }
-  return null;
-};
+const inSample = (sel) => document.querySelector(`#sample-message ${sel}`);
 
-// Each step lists its targets in order of preference and always ends on a
-// fallback that exists, so a step is never skipped.
+// The example message: fictional, like every scenario.
+$("sample-message").innerHTML = renderMessage({
+  scenario_id: 7,
+  channel: "email",
+  sender: "it-desk@bayline-energy-support.net",
+  subject: "Your password expires today",
+  body: "Your Bayline Energy password expires in 2 hours. Sign in now to keep your account active.",
+  link: "http://bayline-energy-support.net/sign-in",
+});
+
+// Each step falls back to something that exists, so a step is never skipped.
+// The sound part of the last tip only shows once the game has a sound toggle (#btn-sound).
 const TUTORIAL_STEPS = [
   {
-    // Email: the From line. Text message: the phone's contact name.
-    target: () => inMessage(".email .from", ".sms .label b", ".email .email-who", ".sms .label") || $("message"),
+    target: () => inSample(".from") || $("sample-message"),
     text: () => "Check who it's really from. Compare it to your trusted contacts.",
   },
   {
-    // The link, or the message body when there's no link
-    target: () => inMessage(".link-chip", ".email .body", ".sms .bubble") || $("message"),
-    text: () => `${canHover() ? "Hover" : "Tap"} links to see where they really go.`,
+    target: () => document.querySelector("#mission-screen .contacts"),
+    text: () => "These are the real websites and phone numbers. If a message doesn't match, be suspicious.",
   },
   {
-    target: () => document.querySelector("#play-screen .answers"),
-    text: () => "Decide: Phish or Legit?",
+    target: () => inSample(".link-chip") || inSample(".body") || $("sample-message"),
+    text: () => `${canHover() ? "Hover" : "Tap"} a link to see where it really goes. Look at the main domain.`,
+  },
+  {
+    target: () => $("sample-answers"),
+    text: () => "Decide: Phish or Legit? On a keyboard, use ← for Phish and → for Legit.",
+  },
+  {
+    target: () => $("sample-dots"),
+    text: () => "✓ means you got it right, ✗ means you got hooked or were too cautious.",
+  },
+  {
+    target: () => ($("btn-sound") ? document.querySelector(".run-tools") : $("btn-tutorial")),
+    text: () => $("btn-sound")
+      ? "Turn sound on here, and press ? anytime to replay this tutorial."
+      : "Press ? anytime to replay this tutorial.",
   },
 ];
 
@@ -447,25 +464,22 @@ let tutReturn = null;   // where keyboard focus goes back to afterwards
 let tutMode = null;     // "float" (in open space next to the target) or "inline" (in the page flow)
 let tutOffset = null;   // float: the callout's position relative to the target
 
-const messageReady = () => !!document.querySelector("#message .email, #message .sms");
+const onMission = () => document.body.dataset.screen === "mission-screen";
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
-// Called by nextRound() after the scenario is rendered. Waits for the browser
-// to lay the message out (two frames, and the web font, capped at a short
-// wait) so the first callout is placed against the final layout.
-async function maybeStartFirstRoundTutorial() {
-  if (round !== 1 || tutorialSeen()) return;
-  const forRound = current;
+// Called when the briefing opens. Waits for the page to lay out (two frames,
+// and the web font, capped at a short wait) so callouts are placed against
+// the final layout.
+async function maybeStartMissionTutorial() {
+  if (tutorialSeen()) return;
   await nextFrame();
   await nextFrame();
   if (document.fonts?.ready) await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))]);
-  if (current !== forRound || round !== 1 || answering || tutStep >= 0) return;
-  if (document.body.dataset.screen !== "play-screen" || !messageReady()) return;
-  startTutorial();
+  if (onMission() && tutStep < 0) startTutorial();
 }
 
 function startTutorial() {
-  if (!messageReady()) return;
+  if (!onMission()) return;
   hidePeek();
   if (tutStep < 0) tutReturn = document.activeElement;
   tutStep = 0;
@@ -484,7 +498,7 @@ function showTutorialStep() {
 
   const step = TUTORIAL_STEPS[tutStep];
   tutTarget = step.target();
-  if (!tutTarget) return endTutorial({ save: false });   // play screen is gone
+  if (!tutTarget) return endTutorial({ save: false });   // the briefing is gone
   tutTarget.classList.add("tut-target");
   tut.innerHTML = `
     <span class="tut-arrow" aria-hidden="true"></span>
@@ -509,7 +523,7 @@ function showTutorialStep() {
 //    in the page flow right under the target, so it pushes the content below
 //    it down instead of covering it.
 const TUT_GAP = 14;   // target to callout (leaves room for the arrow)
-const TUT_EDGE = 12;  // callout to screen edge
+const TUT_EDGE = 8;   // callout to screen edge
 const TUT_PAD = 4;    // breathing room around anything the callout must not cover
 
 // Paragraph-like elements: only their lines of text count, not empty padding.
@@ -555,8 +569,8 @@ function findTutorialSpot(r, w, h) {
     !obstacles.some((o) => o.left < left + w + TUT_PAD && o.right > left - TUT_PAD &&
                            o.top < top + h + TUT_PAD && o.bottom > top - TUT_PAD);
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-  // The arrow sits at least 22px in from the callout's corners
-  const lefts = spread(cx - w + 22, cx - 22), tops = spread(cy - h + 22, cy - 22);
+  // The arrow sits at least 20px in from the callout's corners
+  const lefts = spread(cx - w + 20, cx - 20), tops = spread(cy - h + 20, cy - 20);
   const sides = [
     ["below", lefts.map((left) => [left, r.bottom + TUT_GAP])],
     ["above", lefts.map((left) => [left, r.top - TUT_GAP - h])],
@@ -579,7 +593,7 @@ function applyFloat(spot, r, w, h) {
   tut.style.top = `${spot.top}px`;
   const vertical = spot.side === "below" || spot.side === "above";
   tut.style.setProperty(vertical ? "--arrow-x" : "--arrow-y",
-    `${Math.min(Math.max(22, spot.arrow), (vertical ? w : h) - 22)}px`);
+    `${Math.min(Math.max(20, spot.arrow), (vertical ? w : h) - 20)}px`);
 }
 
 function applyInline(target) {
@@ -589,10 +603,25 @@ function applyInline(target) {
   tut.style.left = tut.style.top = "";
   tut.dataset.side = "below";
   // Right under the target: the sender line itself, or the row the target is
-  // in (contact name, link row, Phish / Legit), so the arrow touches it.
-  const anchor = target.matches(".email .from") ? target : target.closest(".label, .link, .answers") || target;
-  anchor.after(tut);
-  widenInlineInEmailHeader();
+  // in (link row, Phish / Legit, dots). In the top bar it goes just under the
+  // bar, lined up with the "?" button, so the bar's own layout isn't touched.
+  const bar = target.closest(".topbar");
+  if (bar) {
+    bar.after(tut);
+    const gutter = document.documentElement.clientWidth - target.getBoundingClientRect().right;
+    tut.style.marginLeft = "auto";
+    tut.style.marginRight = `${Math.max(TUT_EDGE, gutter - 20)}px`;
+  } else {
+    // The sender line sits right on top of the callout; anything else gets it
+    // under its whole row. A link whose "inspect" hint has wrapped onto the
+    // next line (phones) gets it directly under the link, before the hint.
+    const hint = target.matches(".link-chip") && target.parentElement.querySelector(".link-hint");
+    const hintWrapped = hint && hint.getBoundingClientRect().top >= target.getBoundingClientRect().bottom - 2;
+    const anchor = target.matches(".email .from") || hintWrapped ? target
+      : target.closest(".sample-progress") || target.closest(".link, .answers, .dots") || target;
+    anchor.after(tut);
+    widenInlineInEmailHeader();
+  }
   pointInlineArrow();
   // Show the target and the whole callout if they fit; the target wins if not
   const t = target.getBoundingClientRect(), c = tut.getBoundingClientRect();
@@ -619,7 +648,7 @@ function widenInlineInEmailHeader() {
 function pointInlineArrow() {
   const t = tutTarget.getBoundingClientRect(), c = tut.getBoundingClientRect();
   const x = t.left + t.width / 2 - c.left;
-  tut.style.setProperty("--arrow-x", `${Math.min(Math.max(22, x), c.width - 22)}px`);
+  tut.style.setProperty("--arrow-x", `${Math.min(Math.max(20, x), c.width - 20)}px`);
 }
 
 function layoutTutorial() {
@@ -693,7 +722,7 @@ function endTutorial({ save = false } = {}) {
   document.body.appendChild(tut);
   tutMode = tutOffset = null;
   if (hadFocus) {
-    const back = [tutReturn, $("btn-phish"), $("btn-tutorial")]
+    const back = [tutReturn, $("btn-start"), $("btn-tutorial")]
       .find((el) => el && document.body.contains(el) && !el.disabled && el.offsetParent);
     if (back) back.focus({ preventScroll: true });
   }
@@ -706,13 +735,22 @@ tut.addEventListener("click", (e) => {
     showTutorialStep();
   }
 });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") endTutorial({ save: true }); });
+// Escape skips. Enter presses "Got it", unless focus is already on one of the
+// callout's own buttons (then Enter presses that button, as usual).
+document.addEventListener("keydown", (e) => {
+  if (tutStep < 0) return;
+  if (e.key === "Escape") return endTutorial({ save: true });
+  if (e.key === "Enter" && !e.repeat && !tut.contains(document.activeElement)) {
+    e.preventDefault();
+    tut.querySelector(".tut-ok")?.click();
+  }
+});
 window.addEventListener("scroll", placeTutorial, { passive: true });
 window.addEventListener("resize", relayoutTutorial);
-// "?" replays it on the current message; clicking it while open closes it (counts as a skip).
+// "?" in the top bar (mission screen) replays it; clicking it while open closes it (counts as a skip).
 $("btn-tutorial").addEventListener("click", () => {
   if (tutStep >= 0) return endTutorial({ save: true });
-  if (!answering) startTutorial();
+  startTutorial();
 });
 
 function renderMessage(s) {
@@ -952,6 +990,18 @@ async function answer(guess) {
 
 $("btn-phish").addEventListener("click", () => answer("Phish"));
 $("btn-legit").addEventListener("click", () => answer("Legit"));
+
+// Keyboard shortcuts on the play screen: ← Phish, → Legit.
+// Only while the buttons are active, and never while typing in a field.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  if (document.body.dataset.screen !== "play-screen" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  const btn = e.key === "ArrowLeft" ? $("btn-phish") : $("btn-legit");
+  if (btn.disabled || answering) return;
+  e.preventDefault();
+  btn.click();
+});
 $("btn-next").addEventListener("click", () => (round < ROUNDS ? nextRound() : finish()));
 
 // ---------- Badge reveal ----------

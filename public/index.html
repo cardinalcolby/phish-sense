@@ -96,8 +96,8 @@
         <div class="run-tools">
           <button id="btn-contacts" class="contacts-toggle" type="button" aria-label="Trusted contacts"
             aria-expanded="false" aria-controls="contacts-panel">📇 <span class="label-long">Trusted contacts</span><span class="label-short">Contacts</span></button>
-          <!-- Replays the first-round tutorial -->
-          <button id="btn-tutorial" class="help-toggle" type="button" aria-label="Show tutorial" title="Show tutorial">?</button>
+          <!-- Mission screen only: replays the tutorial -->
+          <button id="btn-tutorial" class="help-toggle" type="button" aria-label="Replay tutorial" title="Replay tutorial">?</button>
         </div>
       </div>
     </div>
@@ -146,6 +146,28 @@
           <div class="contacts-list"></div>
         </div>
       </div>
+      <!-- Tutorial: a compact example inbox the tips point at (see "Tutorial" in app.js) -->
+      <div class="col-12">
+        <div class="ps-card practice">
+          <p class="practice-title">👀 How to check a message</p>
+          <div class="practice-body">
+            <div id="sample-message" class="sample-message"></div>
+            <div class="practice-side" aria-hidden="true">
+              <div id="sample-answers" class="answers sample-answers">
+                <span class="answer phish">🎣 Phish</span>
+                <span class="answer legit">✅ Legit</span>
+              </div>
+              <div class="sample-progress">
+                <div id="sample-dots" class="dots sample-dots">
+                  <span class="dot correct">✓</span><span class="dot wrong">✗</span><span class="dot current"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <span class="sample-progress-label">Your progress</span>
+              </div>
+              <p class="practice-note">Just an example. Your real messages start when you begin the mission.</p>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="col-12">
         <div class="mission-buttons">
           <button id="btn-back" class="secondary">← Change difficulty</button>
@@ -174,8 +196,8 @@
         </div>
 
         <div class="answers">
-          <button id="btn-phish" class="answer phish">🎣 Phish</button>
-          <button id="btn-legit" class="answer legit">✅ Legit</button>
+          <button id="btn-phish" class="answer phish" aria-keyshortcuts="ArrowLeft" title="Shortcut: ←">🎣 Phish</button>
+          <button id="btn-legit" class="answer legit" aria-keyshortcuts="ArrowRight" title="Shortcut: →">✅ Legit</button>
         </div>
 
         <!-- Reaction to the answer: hooked, dodged, too cautious, or safe -->

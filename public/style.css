@@ -66,6 +66,12 @@ body[data-screen="play-screen"] .run-status,
 body[data-screen="end-screen"] .run-status { display: flex; }
 body[data-screen="end-screen"] .streak,
 body[data-screen="end-screen"] .run-tools { display: none; }
+/* Mission screen: the bar shows only the "?" (replay tutorial); other screens hide the "?" */
+body[data-screen="mission-screen"] .run-status { display: flex; }
+body[data-screen="mission-screen"] .run-info,
+body[data-screen="mission-screen"] .streak,
+body[data-screen="mission-screen"] .contacts-toggle,
+body:not([data-screen="mission-screen"]) .help-toggle { display: none; }
 .run-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .round-counter { margin: 0; font-size: 14px; color: var(--muted); white-space: nowrap; }
 
@@ -79,7 +85,11 @@ body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap unde
 
 /* Mission: two cards side by side on large screens, same height.
    Uses the full container width, so its edges line up with the play screen and the logo. */
-#mission-screen .ps-card { margin: 0; height: 100%; }
+#mission-screen .ps-card { margin: 0; }
+/* Cards fill their column (flex, not height: 100%, so a tutorial tip placed
+   under a card grows the column instead of spilling into the next row) */
+#mission-screen > .col-lg-7, #mission-screen > .col-lg-5 { display: flex; flex-direction: column; }
+#mission-screen .briefing, #mission-screen .contacts { flex: 1 1 auto; }
 
 /* Scroll areas inside cards get a dark scrollbar that matches the theme */
 .ps-card, .email .body, .sms .bubble { scrollbar-width: thin; scrollbar-color: #3a6185 transparent; }
@@ -250,7 +260,39 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .contact-phone { color: var(--text); }
 .contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
-/* ---------- First-round tutorial (see "Tutorial" in app.js) ---------- */
+/* ---------- Tutorial (see "Tutorial" in app.js) ---------- */
+/* Example inbox on the mission briefing: kept compact so Start mission stays close */
+.practice.ps-card { padding: 14px 16px; }
+.practice-title {
+  margin: 0 0 10px; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.practice-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.practice-side { display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 992px) {
+  .practice-body { grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+}
+.sample-message .email::before { padding: 6px 14px; font-size: 11px; }
+.sample-message .email-head { padding: 10px 14px; }
+.sample-message .avatar { width: 34px; height: 34px; font-size: 15px; }
+.sample-message .email .body { padding: 10px 14px; font-size: 15px; line-height: 1.5; }
+.sample-message .link { padding: 0 14px 12px; }
+.sample-message .email-actions { display: none; }   /* Reply / Forward aren't part of the lesson */
+/* The example Phish / Legit are pictures of the buttons, not buttons */
+.sample-answers .answer {
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px; border-radius: 10px; font-weight: 600; cursor: default;
+}
+.sample-progress { display: flex; align-items: center; gap: 10px; }
+.sample-progress-label { font-size: 13px; color: var(--muted); }
+/* Example dots are a little bigger so the ✓ and ✗ fit inside */
+.sample-dots .dot {
+  width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; line-height: 1; color: var(--navy); animation: none;
+}
+.sample-dots .dot.current { transform: none; }
+.practice-note { margin: 0; font-size: 13px; color: var(--muted); }
+
 .run-tools { display: flex; align-items: center; gap: 8px; }
 /* "?" button next to Trusted contacts: same outline pill look, as a circle */
 .help-toggle {
@@ -282,6 +324,8 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 }
 /* Under the sender line, inside the email header (app.js may widen it sideways) */
 .email-who > .tutorial.tut-inline { margin: 10px 0 8px; }
+/* Right under the link, on its own line before the "Hover to inspect" hint */
+.link > .tutorial.tut-inline { flex: 1 0 100%; max-width: none; margin: 6px 0 4px; }
 /* In the play column the grid rules set the width; just keep the gap */
 #play-screen .play-side > .tutorial.tut-inline { max-width: none; }
 .tutorial p { margin: 0; }
@@ -322,6 +366,9 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .sms .label b { width: fit-content; max-width: 100%; margin: 0 auto; }
 .tut-target { outline: 2px solid var(--teal) !important; outline-offset: 2px; border-radius: 4px; }
 .answers.tut-target { outline-offset: 4px; border-radius: 12px; }
+.ps-card.tut-target { outline-offset: 3px; border-radius: 14px; }   /* keep the card's own corners */
+.help-toggle.tut-target { border-radius: 50%; }
+.dots.tut-target { outline-offset: 4px; border-radius: 999px; }
 /* The message body fills the email edge to edge, so its ring sits inside */
 .email .body.tut-target, .sms .bubble.tut-target { outline-offset: -2px; }
 .sms .bubble.tut-target { border-radius: 18px 18px 18px 4px; }
@@ -644,6 +691,7 @@ body { overflow-x: clip; }
     gap: 6px 8px; padding-top: 6px; padding-bottom: 8px; min-height: 0;
   }
   body[data-screen="play-screen"] .run-status,
+  body[data-screen="mission-screen"] .run-status,
   body[data-screen="end-screen"] .run-status { display: contents; }
   .brand { grid-area: brand; }
   .streak { grid-area: streak; justify-self: end; }
