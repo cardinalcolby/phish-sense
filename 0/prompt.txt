@@ -1,0 +1,30 @@
+Right now my app is running fine at "https://phishsense.design/". The main page shows a Leaderboard on the left and the PhishSense Masters on the right. I would like for the data in these two places to be loaded from records stored in my database hosted in Vultr named "appdb" in the table "scores". Walk me through these changes
+
+---
+
+Here is my Database connection string "psql REDACTED" and my database url "REDACTED"
+
+---
+
+Update my deplyment file to add a job that comments on my PR using the template here "
+
+<pasted_content id="592b">
+            #[Success | id: deploy-to-webapp] - Comment on PR with UAT Preview link
+            - name: Comment on PR with the preview link
+              uses: peter-evans/create-or-update-comment@v3
+              id: pr-preview-comment
+              with:
+                issue-number: ${{ github.event.pull_request.number }}
+                body: |
+                    ### WebApp Deployment Preview
+                    🔗 Preview this PR: https://${{ env.WEBAPP_NAME }}-preview-pr-${{ github.event.pull_request.number }}.azurewebsites.net
+                    💻 Commit SHA: ${{ github.sha }}
+
+                    - Your changes have been deployed to the preview site. The preview site will update as you add more approved commits to this branch.
+                    - The preview link is shareable, but the UAT environment will be deleted when the pull request is merged or closed.
+
+                    > *This is an automated message.*
+                reactions: "rocket" 
+</pasted_content id="592b">
+
+" Instead of saying its a preview say that the app has been pushed to production and is live, keep the SHA. Ensure that the preview link is pointing to https://phishsense.design/
