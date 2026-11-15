@@ -71,15 +71,27 @@ const calmMode = () => window.matchMedia("(prefers-reduced-motion: reduce)").mat
 // or a static host like Vercel), the game uses mock-data.js instead.
 let OFFLINE = location.protocol === "file:";
 
+// Only switch to practice mode when there is no backend at all (network error,
+// 404, or a static host returning HTML). If the backend is there but the
+// database is down (500/502), stay online so the page shows an error instead
+// of quietly showing scores saved only in this browser.
 async function checkBackend() {
   if (OFFLINE) return;
   try {
     const r = await fetch("/api/leaderboard");
+    if (r.status >= 500) return;
     if (!r.ok) throw new Error("no backend");
     await r.json();
   } catch (e) {
     OFFLINE = true;
   }
+}
+
+// Fetch JSON and throw on any HTTP error, so callers can show a message
+async function getJson(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url} returned ${r.status}`);
+  return r.json();
 }
 
 async function apiGetScenario(mode, seen) {
@@ -120,15 +132,31 @@ async function apiSaveScore(username, points, badge) {
   }).then((r) => r.json());
 }
 
+// Practice mode keeps scores in this browser only
+function localBoard() {
+  let board = {};
+  try { board = JSON.parse(localStorage.getItem("ps-board") || "{}"); } catch (e) {}
+  return Object.values(board);
+}
+
+// Leaderboard: rows from the scores table (most badges, then highest score)
 async function apiLeaderboard() {
   if (OFFLINE) {
-    let board = {};
-    try { board = JSON.parse(localStorage.getItem("ps-board") || "{}"); } catch (e) {}
-    return Object.values(board)
+    return localBoard()
       .sort((a, b) => b.badges.length - a.badges.length || b.total_score - a.total_score)
       .slice(0, 50);   // same cap as the server
   }
-  return fetch("/api/leaderboard").then((r) => r.json());
+  return getJson("/api/leaderboard");
+}
+
+// Masters: players in the scores table with all three badges
+async function apiMasters() {
+  if (OFFLINE) {
+    return localBoard()
+      .filter((p) => ALL_MODES.every((b) => p.badges.includes(b)))
+      .sort((a, b) => b.total_score - a.total_score);
+  }
+  return getJson("/api/masters");
 }
 
 // ---------- Trusted contacts ----------
@@ -1131,19 +1159,34 @@ function leaderboardRow(lead, p, withIcons) {
     `<span class="lb-score">${p.total_score} pts</span></li>`;
 }
 
+const LOAD_ERROR = '<li class="empty">Couldn\'t load scores right now. Try again soon.</li>';
+
+// Both lists load from the database at the same time; if one fails, the other still shows
 async function loadLeaderboard() {
-  const rows = await apiLeaderboard();
-  const html = rows.length
-    ? rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
-    : '<li class="empty">No scores yet. Be the first!</li>';
+  const [board, mastersResult] = await Promise.allSettled([apiLeaderboard(), apiMasters()]);
+
+  let html = LOAD_ERROR;
+  if (board.status === "fulfilled") {
+    const rows = board.value;
+    html = rows.length
+      ? rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
+      : '<li class="empty">No scores yet. Be the first!</li>';
+  } else {
+    console.error("Leaderboard failed to load:", board.reason);
+  }
   document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));
 
-  // Home screen: Masters (all three badges) also get their own list,
-  // taken from every player the server sent, not just the top 7
-  const masters = rows.filter(isMasterPlayer);
-  $("start-screen").querySelector(".masters-list").innerHTML = masters.length
-    ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
-    : '<li class="empty">No Masters yet. Be the first!</li>';
+  // Home screen: Masters (all three badges) get their own list
+  const mastersList = $("start-screen").querySelector(".masters-list");
+  const masters = mastersResult.status === "fulfilled" ? mastersResult.value : [];
+  if (mastersResult.status === "fulfilled") {
+    mastersList.innerHTML = masters.length
+      ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
+      : '<li class="empty">No Masters yet. Be the first!</li>';
+  } else {
+    console.error("Masters failed to load:", mastersResult.reason);
+    mastersList.innerHTML = LOAD_ERROR;
+  }
   // Only 1 or 2 Masters: a soft nudge underneath so the card doesn't look empty
   $("start-screen").querySelector(".masters-join")
     .classList.toggle("hidden", !(masters.length === 1 || masters.length === 2));
