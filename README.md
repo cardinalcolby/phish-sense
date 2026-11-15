@@ -6,7 +6,7 @@ PhishSense uses Gemini to create endless realistic scams, then reveals the red f
 
 Built at **Emory Hacks 2026** by Abigail, Bryan, Ismahan, and Yusra.
 
-**Live site:** [phishsense-livid.vercel.app](https://phishsense-livid.vercel.app/)
+**Live site:** [phishsense.design](https://phishsense.design/)
 
 ---
 
@@ -48,8 +48,9 @@ Players just enter a name and play. We don't collect emails, passwords, or any p
 | **Game screens** (`public/`) | HTML, CSS, and JavaScript. Inbox-style emails and phone-style texts. |
 | **Backend** (`server.js`) | Node.js and Express. Serves scenarios, checks answers, saves scores. |
 | **Gemini API** | Writes a brand-new scenario every round, matched to the difficulty. |
+| **Vultr** (server) | Runs the Node.js app that hosts the live site. |
 | **Vultr** (PostgreSQL) | Stores scenarios and the leaderboard. |
-| **Vercel** | Hosts the live site. |
+| **GoDaddy** | Custom domain [phishsense.design](https://phishsense.design/), served over HTTPS. |
 | **Entire** | Our team's git workflow. |
 
 ### Gemini + backup scenarios
@@ -90,7 +91,9 @@ The full app also works without a Gemini key. It just uses the backup scenarios.
 | `GET /api/masters` | Players with all three badges. |
 | `GET /api/health` | Database name and row counts, or 503 if the database can't be reached. |
 
-If the database can't be reached, a finished game is still saved in the browser and sent to the database the next time the page can reach it. The Leaderboard and PhishSense Masters lists then show the last list the database sent plus games saved in that browser, with a note under them.
+### Works even when the database is down
+
+The app is built to fall back to the player's device whenever it can't pull data from the PostgreSQL database. If the database can't be reached, a finished game is still saved in the browser and sent to the database the next time the page can reach it. The Leaderboard and PhishSense Masters lists then show the last list the database sent plus games saved in that browser, with a note under them.
 
 ## Project files
 
