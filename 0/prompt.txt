@@ -1,0 +1,26 @@
+<task-notification>
+<task-id>b418mu8qy</task-id>
+<tool-use-id>toolu_018zJU3so5oFC9QsrSbSgpTA</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\b418mu8qy.output</output-file>
+<status>completed</status>
+<summary>Background command "Push to Abigail_Front_End_Work" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<pasted_content id="9cc9">
+The tutorial callouts are covering other content. In my screenshot, the "Tip 1 of 3" callout sits on top of the "How to..." heading and the "? Show..." button, so they're cut off and unreadable. Please fix:
+
+1. Position each callout so it never covers text or buttons. Put it in open space next to its target (above, below, left, or right, whichever has room), and keep the arrow pointing at the target.
+2. If there's no room, scroll the target into view first, then place the callout.
+3. Make the teal highlight box fit tightly around the target element (for example, just the sender line), not the full width of the email.
+4. Keep callouts inside the screen on all sizes, including phones under 900px.
+
+Also: the tutorial is showing on the mission screen with an example inbox below the mission, which makes the page scroll. The tutorial should run on the real first round on the play screen instead, and the mission screen should go back to just the mission, trusted contacts, and the Change difficulty and Start mission buttons. If the example inbox was added for the tutorial, remove it.
+
+Test at 1920x1080, 1366x768, and 375px phone width with an email and a text message. Commit with "Fix tutorial callout placement" and push to Abigail_Front_End_Work.
+</pasted_content id="9cc9">
+
+---
+
+can we make sure this is all going to the new features one not the abigail one
