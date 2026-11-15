@@ -196,11 +196,11 @@ $("btn-start").addEventListener("click", () => {
 function renderDots() {
   let html = "";
   for (let i = 0; i < ROUNDS; i++) {
-    let cls = "";
-    if (results[i] === true) cls = "correct";
-    else if (results[i] === false) cls = "wrong";
+    let cls = "", mark = "";
+    if (results[i] === true) { cls = "correct"; mark = "✓"; }
+    else if (results[i] === false) { cls = "wrong"; mark = "✗"; }
     else if (i === round - 1) cls = "current";
-    html += `<span class="dot ${cls}"></span>`;
+    html += `<span class="dot ${cls}" aria-hidden="true">${mark}</span>`;
   }
   $("dots").innerHTML = html;
   $("dots").setAttribute("aria-label", `Round ${Math.min(round, ROUNDS)} of ${ROUNDS}, ${correct} correct`);
