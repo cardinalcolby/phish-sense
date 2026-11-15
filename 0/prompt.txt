@@ -1,0 +1,35 @@
+can you make it so the home page the leaderboard when it gets too big to fill page has an up and down scroll bar and also can you make it where under the 3 modes it says the part about completing all 3 to be a master and make it also show the trophy logo as a part of what you learn and make the part that says become a master shimmer
+
+---
+
+I also want the scroll for leader board for the home page please
+
+---
+
+there is still not a scroll for the leader board on the first main home page
+
+---
+
+im taliking about the list thats under the become a phishsense master
+
+---
+
+can we actaully move the leader board from the bottom to the left and put people who make it to rank of phish sense master of course still in the leaderboard but also in their own section on the right
+
+---
+
+<pasted_content id="dbc7">
+Balance the three-column home screen. Front end only (public/ files), keep the colors, icons, and content.
+
+1. Leaderboard rows: fix the alignment. Use a grid for each row with three columns: rank, name + badge icons, points. Points always line up on the right, on the same line as their name. Don't let names or icons wrap (shorten long names with an ellipsis if needed).
+2. Make the left Leaderboard card and the right PhishSense Masters card the same width and the same height, both starting at the same top edge.
+3. Show the top 7 on the leaderboard so it doesn't run too tall.
+4. Fill out the Masters card:
+   - List each Master with the trophy, name, and points, using the same row grid as the leaderboard.
+   - Move the "Earn all 3 badges to become a PhishSense Master" line into the bottom of this card, with the three badge icons (green fish, yellow rod, red anchor) shown under it.
+   - If there are no Masters yet, show "No Masters yet. Be the first!"
+5. Keep the center column (name field and difficulty buttons) centered, with equal space on both sides.
+6. On phones under 900px, stack in this order: logo, name, difficulty, Masters, leaderboard.
+
+Check at 1920x1080 and 1366x768 that both side cards line up and match in height. Commit with "Balance home screen columns" and push to Abigail_Front_End_Work.
+</pasted_content id="dbc7">
