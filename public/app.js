@@ -640,6 +640,16 @@ function revealBadge(isMaster) {
   burstConfetti();
 }
 
+// No badge this run: a hook takes the badge's place at the top of the card
+function showMissedBadge() {
+  $("badge-art").textContent = "🪝";
+  $("badge-name").textContent = "";
+  $("badge-master").classList.add("hidden");
+  $("confetti").innerHTML = "";
+  $("badge-reveal").classList.remove("hidden");
+  replayAnimation($("badge-art"));
+}
+
 // ---------- End of run ----------
 function renderRecap() {
   // Group the same red flag together so repeats show as a count.
@@ -672,7 +682,7 @@ async function finish() {
     : `You need ${TO_PASS} to earn ${BADGES[mode]}. Every round is new, so try again!`;
 
   if (passed) revealBadge(isMaster);
-  else $("badge-reveal").classList.add("hidden");
+  else showMissedBadge();
 
   renderRecap();
   show("end-screen");

@@ -123,19 +123,21 @@
 
     <!-- Screen 4: End of run
          Large screens: badge on the left, recap and leaderboard on the right. -->
-    <section id="end-screen" class="screen row g-3 g-lg-4 justify-content-center align-items-start hidden">
+    <section id="end-screen" class="screen row g-3 g-lg-4 justify-content-center hidden">
       <div class="col-12 col-lg-5 end-main">
-        <div id="badge-reveal" class="badge-reveal hidden">
-          <div id="confetti" class="confetti" aria-hidden="true"></div>
-          <div id="badge-art" class="badge-art" aria-hidden="true"></div>
-          <p id="badge-name" class="badge-name"></p>
-          <p id="badge-master" class="badge-master hidden"></p>
+        <div class="ps-card end-card">
+          <div id="badge-reveal" class="badge-reveal">
+            <div id="confetti" class="confetti" aria-hidden="true"></div>
+            <div id="badge-art" class="badge-art" aria-hidden="true"></div>
+            <p id="badge-name" class="badge-name"></p>
+            <p id="badge-master" class="badge-master hidden"></p>
+          </div>
+
+          <h2 id="end-title"></h2>
+          <p id="end-text"></p>
+
+          <button id="btn-home">Back to modes</button>
         </div>
-
-        <h2 id="end-title"></h2>
-        <p id="end-text"></p>
-
-        <button id="btn-home">Back to modes</button>
       </div>
 
       <div class="col-12 col-lg-7 end-side">
