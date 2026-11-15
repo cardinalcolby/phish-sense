@@ -78,6 +78,7 @@ body:not([data-screen="mission-screen"]) .help-toggle { display: none; }
 /* ---------- Page ---------- */
 main { padding-top: 16px; padding-bottom: 16px; }
 body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap under the top bar */
+body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to make room for the big Start mission boat */
 .hidden { display: none !important; }
 
 /* Home: one centered column */
@@ -109,7 +110,7 @@ body:not([data-screen="start-screen"]) main { padding-top: 32px; }   /* gap unde
 .mission-mode { font-size: 20px; font-weight: 800; color: var(--text); }
 .mission-mode.tier-easy, .mission-mode.tier-medium, .mission-mode.tier-hard { color: var(--tier); }
 .facts { padding: 10px 14px; border-left: 3px solid var(--teal); background: rgba(45, 224, 196, 0.08); border-radius: 6px; }
-.mission-buttons { display: flex; justify-content: space-between; gap: 12px; }
+.mission-buttons { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 button.secondary { background: transparent; color: var(--text); border: 2px solid var(--navy-2); }
 
 input {
@@ -124,6 +125,38 @@ button {
   background: var(--teal); color: var(--navy);
 }
 button:disabled { opacity: 0.5; cursor: default; }
+
+/* Start mission is a little fishing boat that blinks a teal glow to draw the eye.
+   The button itself is see-through: ::before is the hull, ::after the cabin
+   and mast. The glow is a drop-shadow so it follows the boat's outline
+   instead of a rectangle. It's big, so the mission screen's gaps are trimmed
+   (see "Mission screen" below) to keep everything on one screen; the mast
+   tip pokes a little above the button into the gap. */
+#btn-start {
+  position: relative; isolation: isolate;
+  min-width: 300px; padding: 30px 64px 12px; border-radius: 0;
+  font-size: 1.35rem; font-weight: 800; letter-spacing: 0.5px;
+  background: transparent; color: var(--navy);
+  animation: start-blink 1.4s ease-in-out infinite;
+}
+#btn-start::before { /* hull, with a darker stripe at the waterline */
+  content: ""; position: absolute; inset: 20px 0 0 0; z-index: -1;
+  background: linear-gradient(var(--teal) 82%, #1fa892 82%);
+  clip-path: polygon(0 6%, 100% 0, 89% 100%, 8% 100%);
+}
+#btn-start::after { /* cabin with a porthole (left) and the mast (right) */
+  content: ""; position: absolute; left: 24%; bottom: calc(100% - 20px);
+  width: 40%; max-width: 140px; height: 30px;
+  background:
+    radial-gradient(circle, var(--navy-2) 3.5px, transparent 4.5px) no-repeat left calc(27% - 6px) bottom 2px / 12px 12px,
+    linear-gradient(var(--text), var(--text)) no-repeat right 20% bottom / 4px 30px,
+    linear-gradient(var(--text), var(--text)) no-repeat left bottom / 55% 16px;
+}
+#btn-start:hover, #btn-start:focus-visible { animation: none; filter: brightness(1.1) drop-shadow(0 0 10px rgba(45, 224, 196, 0.6)); }
+@keyframes start-blink {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(45, 224, 196, 0)); }
+  50% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(45, 224, 196, 0.85)); }
+}
 
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 /* Each difficulty sets --tier; anything tagged with it (icons, the mission title) uses that color */
