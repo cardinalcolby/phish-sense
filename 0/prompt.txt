@@ -1,0 +1,9 @@
+<pasted_content id="82c9">
+Small polish pass on public/style.css (and index.html/app.js only if needed). No libraries, keep all features and the current look.
+
+1. End screen: put the left side (score, badge message, Back to modes button) inside a card that matches the other cards. Show the earned badge emoji large at the top of the card (or a hook emoji if no badge). Make it the same height as the right column and center its content vertically.
+2. Make the mission screen use the same max width and left/right edges as the play screen, so both line up with the header logo.
+3. On screens wider than 1600px, scale the base font size up slightly (use clamp, about 16px to 18px) so content fills larger monitors better. Phone layout stays the same.
+
+Check at 1366x768, 1920x1080, and 375px phone width. Commit with "Polish end screen and align widths" and push to the same branch.
+</pasted_content id="82c9">
