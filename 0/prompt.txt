@@ -1,0 +1,19 @@
+the tutorial pop ups are not working on the start mission page
+
+---
+
+<task-notification>
+<task-id>bl7q98rj2</task-id>
+<tool-use-id>toolu_01DKDm87gDRNvvLv6koncau3</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\bl7q98rj2.output</output-file>
+<status>completed</status>
+<summary>Background command "Commit on New_Features and push" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+somewhere In the middle of this running I was checking the live index and it worked one time for showing the pop up tutorial steps but now that its all done nothing is working idk what went wrong
+
+---
+
+every new player
