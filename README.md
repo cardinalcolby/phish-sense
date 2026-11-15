@@ -67,7 +67,7 @@ When a round starts, the backend asks Gemini for a new scenario and shows it two
 Open `public/index.html` in a browser, or right-click it in VS Code and choose **Open with Live Server**. The game runs on the 20 backup scenarios, and the leaderboard saves in your browser.
 
 ### Option 2: Full app (Gemini + database)
-1. **Database:** create a Vultr Managed Database (PostgreSQL) with a database named `appdb`. The server runs `setup.sql` every time it starts: it creates the `scenarios` and `scores` tables if they're missing and loads the 20 backup scenarios. Visit `/api/health` to check the connection and row counts.
+1. **Database:** create a Vultr Managed Database (PostgreSQL) with a database named `appdb`. The server runs `setup.sql` every time it starts: it creates the `scenarios`, `leaderboard` (one row per player: total points and badges) and `scores` (one row per finished game) tables if they're missing and loads the 20 backup scenarios. If an older one-row-per-player `scores` table is found, its players are copied into `leaderboard` and it is renamed to `scores_legacy_<timestamp>` (nothing is deleted). Visit `/api/health` to check the connection and row counts.
 2. **Keys:** copy `.env.example` to `.env` and fill in:
    - `DATABASE_URL`: your Vultr database connection string, ending in `/appdb` (not `/defaultdb`)
    - `DATABASE_CA_CERT` (optional): path to the CA certificate from the Vultr database page, to verify the server
@@ -83,10 +83,14 @@ The full app also works without a Gemini key. It just uses the backup scenarios.
 |---|---|
 | `GET /api/scenario?mode=easy` | Returns a message (Gemini first, backup if needed). Never includes the answer. |
 | `POST /api/answer` | `{ scenario_id, guess }` returns whether it was right, the red flags, and the explanation. |
-| `POST /api/score` | `{ username, points, badge }` saves a finished run. |
-| `GET /api/leaderboard` | Top 50 players. |
+| `POST /api/score` | `{ username, mode, correct, run_id }` saves a finished game to `scores` and adds its points and badge to `leaderboard` (the server works out points and badges). Returns the player's totals plus the saved game. A repeated `run_id` is not counted twice. |
+| `GET /api/leaderboard` | Every player (most badges, then highest score), with games played, best game and last played. |
+| `GET /api/players/:username` | One player's totals and their recent games (`?limit=`, default 20). |
+| `GET /api/scores` | Recent games from everyone, newest first (`?username=`, `?limit=`). |
 | `GET /api/masters` | Players with all three badges. |
 | `GET /api/health` | Database name and row counts, or 503 if the database can't be reached. |
+
+If the database can't be reached, a finished game is still saved in the browser and sent to the database the next time the page can reach it. The Leaderboard and PhishSense Masters lists then show the last list the database sent plus games saved in that browser, with a note under them.
 
 ## Project files
 
