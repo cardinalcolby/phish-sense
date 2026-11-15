@@ -1,0 +1,29 @@
+<pasted_content id="c7bf">
+Don't revert anything. Keep the current two-column layout and slim header, and improve it using Bootstrap so it's centered on laptops and works well on phones.
+
+1. Add Bootstrap:
+- Add the latest Bootstrap 5 CSS through its official CDN link in index.html (CSS only, no Bootstrap JavaScript unless it's truly needed).
+- Use Bootstrap's grid (container, row, col classes) for layout only. Keep our own look: navy and teal colors, Inter font, our buttons, cards, inbox and phone styling, animations, and fish cursor. Where Bootstrap's default styles change our design (button shapes, margins, fonts, links, headings), override them in style.css so the game looks the same as now.
+
+2. Home screen:
+- One centered column (about 800px max) with the logo, name input, difficulty buttons, and leaderboard all lined up. The leaderboard should be the same width as the rest and centered.
+
+3. Play screen:
+- On large screens: two columns, centered in the page with equal space on both sides (max about 1200px). Message on the left (about 7 of 12 columns), buttons, reaction, result, and Next on the right (about 5 of 12), aligned to the top of the message.
+- Center the text-message phone inside its column so there's no big gap.
+- Start the content about 32px below the top bar.
+- On phones: stack them in this order: message, buttons, reaction, result, Next.
+
+4. Top bar (mission, play, and end screens):
+- Small logo + "PhishSense" on the left; progress dots, round counter, streak, and Trusted contacts on the right. On phones, let it wrap neatly onto two lines.
+- Streak label: change it to "🔥 2 in a row" (not "correct"), and only show it when the streak is 2 or more.
+
+5. End screen:
+- On large screens: badge reveal on the left, the "Red flags you missed" recap and leaderboard on the right, so it fits without scrolling. On phones, stack them.
+
+6. Keep every feature working: practice mode, trusted contacts, link inspect popup (never covering the Phish/Legit buttons), hook animations, reactions, dots, badge reveal, recap, and the existing api calls. Make sure the hook animations still line up with the message card.
+
+Check every screen (home, mission, play, end) at 1366x768, 1920x1080, and a 375px phone width. Each should be centered, and the play and end screens should fit without scrolling on laptops.
+
+Don't use em dashes in any text shown to players. When you're done, tell me what changed and how to test on a phone size, then commit with the message "Bootstrap grid, centered layouts, and mobile layout" and push to the same branch.
+</pasted_content id="c7bf">
