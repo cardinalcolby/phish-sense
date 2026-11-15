@@ -1,0 +1,5 @@
+I have aleaderboard table and a scores table. Look at how my app was working at this point "https://github.com/cardinalcolby/phish-sense/pull/2" Do what you need to do so that my game data is being recorded and it can be retrieved after a game is over. I need a Leaderboard that works by pulling all user data from a DB and have it fallback to local. And I need a Phis Masters list that pulls from my DB and fallsback to local
+
+---
+
+I have a leaderboard table and a scores table. Look at how my app was working at this point "https://github.com/cardinalcolby/phish-sense/pull/2" Do what you need to do so that my game data is being recorded and it can be retrieved after a game is over. I need a Leaderboard that works by pulling all user data from a DB and have it fallback to local. And I need a Phis Masters list that pulls from my DB and fallsback to local
