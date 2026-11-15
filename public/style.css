@@ -250,31 +250,7 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .contact-phone { color: var(--text); }
 .contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
-/* ---------- Tutorial (see "Tutorial" in app.js) ---------- */
-/* Sample message card on the mission briefing */
-.practice-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 12px; }
-.practice-title {
-  margin: 0; font-size: 13px; font-weight: 600;
-  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
-}
-.practice-replay {
-  font-size: 13px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
-  background: transparent; color: var(--text); border: 2px solid #2b4a68;
-}
-.practice-replay:hover, .practice-replay.open { border-color: var(--teal); }
-.practice-replay.open { background: rgba(45, 224, 196, 0.12); }
-.practice-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-@media (min-width: 992px) {
-  .practice-body { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
-}
-/* The sample's Phish / Legit are pictures of the buttons, not buttons */
-.sample-answers .answer {
-  display: flex; align-items: center; justify-content: center;
-  padding: 12px; border-radius: 10px; font-weight: 600; cursor: default;
-}
-.practice-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
-
-
+/* ---------- First-round tutorial (see "Tutorial" in app.js) ---------- */
 .run-tools { display: flex; align-items: center; gap: 8px; }
 /* "?" button next to Trusted contacts: same outline pill look, as a circle */
 .help-toggle {
@@ -285,7 +261,10 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .help-toggle:hover, .help-toggle.open { border-color: var(--teal); }
 .help-toggle.open { background: rgba(45, 224, 196, 0.12); }
 
-/* The callout: a small card with a teal edge and an arrow pointing at its target */
+/* The callout: a small card with a teal edge and an arrow pointing at its target.
+   It floats in open space next to the target (data-side says which side it's on).
+   When there's no open space, it sits in the page flow under the target
+   (.tut-inline) and pushes the content below it down instead of covering it. */
 .tutorial {
   position: fixed; z-index: 1100; left: 0; top: 0;
   width: min(300px, calc(100vw - 24px));
@@ -293,8 +272,18 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
   background: var(--navy-2); color: var(--text);
   border: 2px solid var(--teal);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  text-align: left;
   animation: tut-in 0.18s ease-out;
 }
+.tutorial.tut-inline {
+  position: relative; left: auto; top: auto; z-index: 5;
+  width: auto; max-width: 360px; margin: 14px 12px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+/* Under the sender line, inside the email header (app.js may widen it sideways) */
+.email-who > .tutorial.tut-inline { margin: 10px 0 8px; }
+/* In the play column the grid rules set the width; just keep the gap */
+#play-screen .play-side > .tutorial.tut-inline { max-width: none; }
 .tutorial p { margin: 0; }
 .tut-count {
   margin-bottom: 6px !important; font-size: 12px; font-weight: 600;
@@ -309,22 +298,32 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .tut-skip:hover { color: var(--text); }
 .tut-ok { padding: 8px 18px; font-size: 14px; }
 .tut-skip:focus-visible, .tut-ok:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* The arrow is a turned square with two teal edges; the corner they share points at the target */
 .tut-arrow {
-  position: absolute; left: var(--arrow-x, 50%);
-  width: 14px; height: 14px;
+  position: absolute; width: 14px; height: 14px;
   background: var(--navy-2); border: 2px solid var(--teal);
-  transform: translateX(-50%) rotate(45deg);
 }
-.tutorial[data-side="below"] .tut-arrow { top: -9px; border-right: 0; border-bottom: 0; }
-.tutorial[data-side="above"] .tut-arrow { bottom: -9px; border-left: 0; border-top: 0; }
+.tutorial[data-side="below"] .tut-arrow,
+.tutorial[data-side="above"] .tut-arrow { left: var(--arrow-x, 50%); transform: translateX(-50%) rotate(45deg); }
+.tutorial[data-side="left"] .tut-arrow,
+.tutorial[data-side="right"] .tut-arrow { top: var(--arrow-y, 50%); transform: translateY(-50%) rotate(45deg); }
+.tutorial[data-side="below"] .tut-arrow { top: -9px; border-right: 0; border-bottom: 0; }   /* points up */
+.tutorial[data-side="above"] .tut-arrow { bottom: -9px; border-left: 0; border-top: 0; }   /* points down */
+.tutorial[data-side="right"] .tut-arrow { left: -9px; border-top: 0; border-right: 0; }     /* points left */
+.tutorial[data-side="left"] .tut-arrow { right: -9px; border-bottom: 0; border-left: 0; }   /* points right */
 @keyframes tut-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; }
 }
 
-/* Ring around the thing the callout points at */
-.tut-target { outline: 3px solid var(--teal) !important; outline-offset: 4px; border-radius: 6px; }
+/* Tight ring around the thing the callout points at.
+   The sender line and contact name shrink to their text, so the ring fits them. */
+.email-who .from { width: fit-content; max-width: 100%; }
+.sms .label b { width: fit-content; max-width: 100%; margin: 0 auto; }
+.tut-target { outline: 2px solid var(--teal) !important; outline-offset: 2px; border-radius: 4px; }
+.answers.tut-target { outline-offset: 4px; border-radius: 12px; }
 /* The message body fills the email edge to edge, so its ring sits inside */
-.email .body.tut-target, .sms .bubble.tut-target { outline-offset: -3px; }
+.email .body.tut-target, .sms .bubble.tut-target { outline-offset: -2px; }
 .sms .bubble.tut-target { border-radius: 18px 18px 18px 4px; }
 .sms .label b.tut-target { outline-offset: 1px; }   /* keeps clear of "Text message from" above */
 
