@@ -680,15 +680,22 @@ body { overflow-x: clip; }
 /* Fish schools: faint blue-gray (not teal, so they never look like the fish cursor).
    Home screen only: display: none on other screens removes them, and coming back restarts the swim. */
 .fish-defs { position: absolute; }
+/* Each school crosses the whole screen at its own height (--y), speed, and direction.
+   The inner .school-drift moves softly up and down, so the path is gently wavy. */
 .fish-school {
-  position: absolute; left: 0; width: 150px;
+  position: absolute; left: 0; top: var(--y); width: 140px;
   fill: var(--muted); opacity: 0.12;
-  animation: school-swim-right 34s linear infinite;
+  animation: school-swim-right var(--swim) linear var(--start) infinite;
 }
-.fish-school svg { display: block; width: 100%; height: auto; animation: school-bob 5s ease-in-out infinite alternate; }
-.school-right { bottom: 14vh; animation-delay: -8s; }
-.school-left  { bottom: 8vh; width: 130px; animation-name: school-swim-left; animation-duration: 27s; animation-delay: -20s; }
-.school-left svg { transform: scaleX(-1); animation-name: school-bob-flipped; animation-duration: 6s; }
+.fish-school.swim-left { animation-name: school-swim-left; }
+.fish-school.swim-left svg { transform: scaleX(-1); }   /* face the way they swim */
+.fish-school svg { display: block; width: 100%; height: auto; }
+.school-drift { animation: school-drift var(--drift) ease-in-out infinite alternate; }
+
+.school-1 { --y: 12vh; --swim: 38s; --start: -6s;  --drift: 7s; }
+.school-2 { --y: 40vh; --swim: 29s; --start: -18s; --drift: 6s; width: 130px; }
+.school-3 { --y: 66vh; --swim: 44s; --start: -30s; --drift: 9s; width: 110px; opacity: 0.1; }
+.school-4 { --y: 82vh; --swim: 33s; --start: -12s; --drift: 8s; width: 120px; }
 body:not([data-screen="start-screen"]) .fish-school { display: none; }
 
 @keyframes school-swim-right {
@@ -699,13 +706,9 @@ body:not([data-screen="start-screen"]) .fish-school { display: none; }
   from { transform: translateX(calc(100vw + 30px)); }
   to   { transform: translateX(-180px); }
 }
-@keyframes school-bob {
-  from { transform: translateY(-4px); }
-  to   { transform: translateY(4px); }
-}
-@keyframes school-bob-flipped {
-  from { transform: scaleX(-1) translateY(-4px); }
-  to   { transform: scaleX(-1) translateY(4px); }
+@keyframes school-drift {
+  from { transform: translateY(-18px); }
+  to   { transform: translateY(18px); }
 }
 
 /* Phones and narrow windows: waves only, no side bubbles or fish */
@@ -715,9 +718,12 @@ body:not([data-screen="start-screen"]) .fish-school { display: none; }
 
 /* Reduced motion: waves and fish stay, but hold still; bubbles are hidden */
 @media (prefers-reduced-motion: reduce) {
-  .wave, .fish-school, .fish-school svg { animation: none !important; }
-  .school-right { transform: translateX(8vw); }
-  .school-left  { transform: translateX(calc(92vw - 130px)); }
+  .wave, .fish-school, .school-drift { animation: none !important; }
+  /* Still fish rest near the side edges, away from the centered content */
+  .school-1 { transform: translateX(2vw); }
+  .school-2 { transform: translateX(calc(98vw - 130px)); }
+  .school-3 { transform: translateX(calc(97vw - 110px)); }
+  .school-4 { transform: translateX(3vw); }
   .bg-bubble { display: none; }
 }
 
