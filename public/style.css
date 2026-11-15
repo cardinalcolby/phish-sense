@@ -97,17 +97,21 @@ body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to 
   .home-center { order: 2; }
   .home-masters { order: 3; }
 
-  /* The home screen fills the window: header on top, then the three columns
-     stretch down to just above the waves. The center content sits in the middle
-     of its column, and its gaps and buttons grow a little on taller screens. */
-  body[data-screen="start-screen"] { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  /* The home screen fills the window: the header and the three columns form one group,
+     centered vertically in the space above the waves (main's bottom padding keeps that
+     space clear). The center content sits in the middle of its column, and its gaps and
+     buttons grow a little on taller screens. */
+  body[data-screen="start-screen"] {
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  body[data-screen="start-screen"] .hero { padding-top: 16px; }
   body[data-screen="start-screen"] main {
-    flex: 1 0 auto; width: 100%; display: flex; flex-direction: column;
+    flex: 0 0 auto; width: 100%;
     padding-bottom: max(16px, 9vh);   /* stop at the top of the waves */
   }
-  body[data-screen="start-screen"] .home-grid { flex: 1 0 auto; }
   .home-center { display: flex; flex-direction: column; justify-content: center; }
-  .home-center .intro { font-size: 1.1rem; }
+  .hero .intro { font-size: 1.1rem; }
   .home-center .step-label { margin-top: clamp(14px, calc(7vh - 26px), 64px); }
   .home-grid .lb-row { margin: clamp(7px, calc(2vh - 8px), 16px) 0; }
   .home-center input { padding: 16px 18px; font-size: 1.2rem; }
@@ -133,7 +137,7 @@ body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to 
 .ps-card, .email .body, .sms .bubble { scrollbar-width: thin; scrollbar-color: #3a6185 transparent; }
 
 /* Start screen */
-.intro { text-align: center; color: var(--muted); margin: 4px 0 0; }
+.intro { text-align: center; color: var(--muted); margin: 10px 0 0; }
 .step-label { margin: 22px 0 8px; font-weight: 600; font-size: 1.05rem; color: var(--text); }
 .step-label + input { margin-top: 0; }
 /* Leaderboard and Masters rows: rank (or trophy) | name + badge icons | points.
@@ -149,11 +153,11 @@ body[data-screen="mission-screen"] main { padding-top: 20px; }   /* tighter, to 
 /* A long Masters list scrolls inside its card instead of making the side cards taller */
 .masters-list { max-height: 15em; overflow-y: auto; padding-right: 6px; }
 
-/* Masters: players who earned all three badges. The list sits centered in the card. */
+/* Masters: players who earned all three badges. The list starts right under the heading. */
 .masters { border: 2px solid var(--medium); }
 .masters h3 { margin-top: 0; }
-.masters-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
-.masters-join { margin: 12px 0 0; text-align: center; color: var(--muted); font-style: italic; opacity: 0.85; }
+.masters-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+.masters-join { margin: 8px 0 0; text-align: center; color: var(--muted); font-style: italic; opacity: 0.85; }
 
 /* "Earn all 3 badges" note, centered under the difficulty buttons */
 .master-goal { margin: 18px 0 0; text-align: center; color: var(--muted); font-weight: 600; font-size: 1.05rem; }
