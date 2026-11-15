@@ -65,7 +65,7 @@ body:not([data-screen="start-screen"]) .topbar { display: block; }
 body[data-screen="play-screen"] .run-status,
 body[data-screen="end-screen"] .run-status { display: flex; }
 body[data-screen="end-screen"] .streak,
-body[data-screen="end-screen"] .contacts-toggle { display: none; }
+body[data-screen="end-screen"] .run-tools { display: none; }
 .run-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .round-counter { margin: 0; font-size: 14px; color: var(--muted); white-space: nowrap; }
 
@@ -249,6 +249,59 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 .contact-domain, .contact-phone { display: block; font-family: monospace; font-size: 14px; color: var(--teal); overflow-wrap: anywhere; }
 .contact-phone { color: var(--text); }
 .contacts-tip { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+/* ---------- First-round tutorial (see "First-round tutorial" in app.js) ---------- */
+.run-tools { display: flex; align-items: center; gap: 8px; }
+/* "?" button next to Trusted contacts: same outline pill look, as a circle */
+.help-toggle {
+  width: 32px; height: 32px; padding: 0; border-radius: 50%;
+  font-size: 14px; font-weight: 800; line-height: 1;
+  background: transparent; color: var(--teal); border: 2px solid var(--navy-2);
+}
+.help-toggle:hover, .help-toggle.open { border-color: var(--teal); }
+.help-toggle.open { background: rgba(45, 224, 196, 0.12); }
+
+/* The callout: a small card with a teal edge and an arrow pointing at its target */
+.tutorial {
+  position: fixed; z-index: 1100; left: 0; top: 0;
+  width: min(300px, calc(100vw - 24px));
+  padding: 14px 16px; border-radius: 14px;
+  background: var(--navy-2); color: var(--text);
+  border: 2px solid var(--teal);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  animation: tut-in 0.18s ease-out;
+}
+.tutorial p { margin: 0; }
+.tut-count {
+  margin-bottom: 6px !important; font-size: 12px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--teal);
+}
+.tut-text { font-size: 15px; line-height: 1.45; }
+.tut-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.tut-skip {
+  padding: 4px 0; background: none; color: var(--muted);
+  font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.tut-skip:hover { color: var(--text); }
+.tut-ok { padding: 8px 18px; font-size: 14px; }
+.tut-skip:focus-visible, .tut-ok:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.tut-arrow {
+  position: absolute; left: var(--arrow-x, 50%);
+  width: 14px; height: 14px;
+  background: var(--navy-2); border: 2px solid var(--teal);
+  transform: translateX(-50%) rotate(45deg);
+}
+.tutorial[data-side="below"] .tut-arrow { top: -9px; border-right: 0; border-bottom: 0; }
+.tutorial[data-side="above"] .tut-arrow { bottom: -9px; border-left: 0; border-top: 0; }
+@keyframes tut-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+/* Ring around the thing the callout points at */
+.tut-target { outline: 3px solid var(--teal) !important; outline-offset: 4px; border-radius: 6px; }
+/* The message body fills the email edge to edge, so its ring sits inside */
+.email .body.tut-target, .sms .bubble.tut-target { outline-offset: -3px; }
+.sms .bubble.tut-target { border-radius: 18px 18px 18px 4px; }
 
 /* ---------- Message area: glow, shake, floating score ---------- */
 .message-wrap { position: relative; }
@@ -570,7 +623,7 @@ body { overflow-x: clip; }
   body[data-screen="end-screen"] .run-status { display: contents; }
   .brand { grid-area: brand; }
   .streak { grid-area: streak; justify-self: end; }
-  .contacts-toggle { grid-area: contacts; }
+  .run-tools { grid-area: contacts; gap: 6px; }
   .run-info { grid-area: info; gap: 6px 12px; }
   .label-long { display: none; }
   .label-short { display: inline; }
@@ -596,6 +649,8 @@ body { overflow-x: clip; }
   .streak { font-size: 13px; }
   .dots { gap: 6px; }
   .contacts-toggle { font-size: 12px; padding: 5px 9px; }
+  .help-toggle { width: 28px; height: 28px; font-size: 13px; }
+  .tut-text { font-size: 14px; }
   .contacts-table { font-size: 13px; }
   .pop-score { font-size: 34px; }
   .reaction { font-size: 17px; padding: 10px 12px; }

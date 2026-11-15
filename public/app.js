@@ -53,6 +53,7 @@ let missed;   // every red flag from the rounds the player got wrong
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => {
+  if (id !== "play-screen") endTutorial();
   ["start-screen", "mission-screen", "play-screen", "end-screen"].forEach((s) => $(s).classList.add("hidden"));
   $(id).classList.remove("hidden");
   // style.css uses this to pick the big header or the slim top bar,
@@ -149,6 +150,7 @@ function setContactsOpen(open) {
   $("contacts-panel").classList.toggle("hidden", !open);
   $("btn-contacts").setAttribute("aria-expanded", String(open));
   $("btn-contacts").classList.toggle("open", open);
+  placeTutorial();   // the panel pushes the message down on phones
 }
 $("btn-contacts").addEventListener("click", () =>
   setContactsOpen($("contacts-panel").classList.contains("hidden")));
@@ -211,6 +213,7 @@ function renderStreak() {
 // ---------- Play ----------
 async function nextRound() {
   await ready;
+  endTutorial();
   round++;
   $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
   $("result").classList.add("hidden");
@@ -230,6 +233,7 @@ async function nextRound() {
   seen.push(current.scenario_id);
   $("message").innerHTML = renderMessage(current);
   $("btn-phish").disabled = $("btn-legit").disabled = false;
+  if (round === 1 && !tutorialSeen()) startTutorial();
 }
 
 // A steady clock time per scenario, so the inbox and phone look real
@@ -382,6 +386,137 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePeek(); });
 window.addEventListener("scroll", placePeek, { passive: true });
 window.addEventListener("resize", placePeek);
+
+// ---------- First-round tutorial ----------
+// The first time a player starts a run, three callouts point at the sender,
+// the link, and the Phish / Legit buttons, one at a time. The "?" button in
+// the top bar replays it. Callouts never block the game: answering closes them.
+const TUTORIAL_KEY = "ps-tutorial-seen";
+const canHover = () => window.matchMedia("(hover: hover)").matches;
+const TUTORIAL_STEPS = [
+  {
+    target: () => document.querySelector("#message .from, #message .sms .label"),
+    text: () => "Check who it's really from. Compare it to your trusted contacts.",
+  },
+  {
+    // Point at the link, or at the message itself when there's no link
+    target: () => document.querySelector("#message .link-chip") || document.querySelector("#message .body, #message .bubble"),
+    text: () => `${canHover() ? "Hover" : "Tap"} links to see where they really go.`,
+  },
+  {
+    target: () => document.querySelector("#play-screen .answers"),
+    text: () => "Decide: Phish or Legit?",
+  },
+];
+
+function tutorialSeen() {
+  try { return localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (e) { return false; }
+}
+function markTutorialSeen() {
+  try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (e) {}
+}
+
+const tut = document.createElement("div");
+tut.className = "tutorial";
+tut.setAttribute("role", "dialog");
+tut.setAttribute("aria-labelledby", "tut-text");
+tut.hidden = true;
+document.body.appendChild(tut);
+
+let tutStep = -1;      // -1 when the tutorial isn't showing
+let tutTarget = null;  // the element the current callout points at
+let tutReturn = null;  // where keyboard focus goes back to afterwards
+
+const messageReady = () => !!document.querySelector("#message .email, #message .sms");
+
+function startTutorial() {
+  if (!messageReady()) return;
+  hidePeek();
+  if (tutStep < 0) tutReturn = document.activeElement;
+  tutStep = 0;
+  $("btn-tutorial").classList.add("open");
+  showTutorialStep();
+}
+
+function clearTutorialTarget() {
+  if (tutTarget) tutTarget.classList.remove("tut-target");
+  tutTarget = null;
+}
+
+function showTutorialStep() {
+  clearTutorialTarget();
+  // Skip any step whose target isn't on the page
+  while (tutStep < TUTORIAL_STEPS.length && !TUTORIAL_STEPS[tutStep].target()) tutStep++;
+  if (tutStep >= TUTORIAL_STEPS.length) return endTutorial();
+
+  const step = TUTORIAL_STEPS[tutStep];
+  tutTarget = step.target();
+  tutTarget.classList.add("tut-target");
+  tut.innerHTML = `
+    <span class="tut-arrow" aria-hidden="true"></span>
+    <p class="tut-count">Tip ${tutStep + 1} of ${TUTORIAL_STEPS.length}</p>
+    <p class="tut-text" id="tut-text">${esc(step.text())}</p>
+    <div class="tut-actions">
+      <button type="button" class="tut-skip">Skip tutorial</button>
+      <button type="button" class="tut-ok">Got it</button>
+    </div>`;
+  tut.hidden = false;
+  replayAnimation(tut);
+
+  // Bring the target on screen (phones stack everything in one long column)
+  const r = tutTarget.getBoundingClientRect();
+  if (r.top < 70 || r.bottom > window.innerHeight - 140) tutTarget.scrollIntoView({ block: "center" });
+  placeTutorial();
+  tut.querySelector(".tut-ok").focus({ preventScroll: true });
+}
+
+// Below the target when there's room, otherwise above it, always on screen.
+function placeTutorial() {
+  if (tutStep < 0 || !tutTarget) return;
+  if (!document.body.contains(tutTarget)) return endTutorial();
+  const gap = 14, edge = 12;
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  const r = tutTarget.getBoundingClientRect();
+  const w = tut.offsetWidth, h = tut.offsetHeight;
+  const below = vh - r.bottom >= h + gap + edge || r.top - gap - h < edge;
+  const top = Math.min(Math.max(edge, below ? r.bottom + gap : r.top - gap - h), vh - h - edge);
+  const x = r.left + Math.min(r.width / 2, 90);   // wide targets: point near their left side
+  const left = Math.min(Math.max(edge, x - w / 2), vw - w - edge);
+  tut.dataset.side = below ? "below" : "above";
+  tut.style.top = `${top}px`;
+  tut.style.left = `${left}px`;
+  tut.style.setProperty("--arrow-x", `${Math.min(Math.max(22, x - left), w - 22)}px`);
+}
+
+function endTutorial() {
+  if (tutStep < 0) return;
+  tutStep = -1;
+  clearTutorialTarget();
+  markTutorialSeen();
+  $("btn-tutorial").classList.remove("open");
+  const hadFocus = tut.contains(document.activeElement);
+  tut.hidden = true;
+  if (hadFocus) {
+    const back = [tutReturn, $("btn-phish"), $("btn-tutorial")]
+      .find((el) => el && document.body.contains(el) && !el.disabled && el.offsetParent);
+    if (back) back.focus({ preventScroll: true });
+  }
+}
+
+tut.addEventListener("click", (e) => {
+  if (e.target.closest(".tut-skip")) return endTutorial();
+  if (e.target.closest(".tut-ok")) {
+    tutStep++;
+    showTutorialStep();
+  }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") endTutorial(); });
+window.addEventListener("scroll", placeTutorial, { passive: true });
+window.addEventListener("resize", placeTutorial);
+$("btn-tutorial").addEventListener("click", () => {
+  if (tutStep >= 0) return endTutorial();
+  if (!answering) startTutorial();
+});
 
 function renderMessage(s) {
   const link = renderLink(s);
@@ -566,6 +701,7 @@ async function answer(guess) {
   answering = true;
   $("btn-phish").disabled = $("btn-legit").disabled = true;
   hidePeek();
+  endTutorial();
 
   try {
     const r = await apiAnswer(current.scenario_id, guess);
