@@ -1,0 +1,27 @@
+Hi so can we make it so that the start mission button blinks
+
+---
+
+can we make the start mission button in the shape of a fishing boat also
+
+---
+
+it looks great but the screen is cutting off the bottom of the boat making it where you have to scroll down
+
+---
+
+I need start mission button to be bigger and more obvious
+
+---
+
+<task-notification>
+<task-id>bej3gmrz7</task-id>
+<tool-use-id>toolu_019oPR7XDRMtj5uFH1cvPtFG</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\bej3gmrz7.output</output-file>
+<status>failed</status>
+<summary>Background command "Start the PhishSense server" failed with exit code 1</summary>
+</task-notification>
+
+---
+
+yes you can push now
