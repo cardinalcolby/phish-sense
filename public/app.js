@@ -175,9 +175,9 @@ function renderDots() {
   $("dots").setAttribute("aria-label", `Round ${Math.min(round, ROUNDS)} of ${ROUNDS}, ${correct} correct`);
 }
 
+// Only worth celebrating from 2 in a row; the label stays hidden until then.
 function renderStreak() {
-  $("streak").textContent =
-    streak >= 2 ? `🔥 ${streak} in a row` : streak === 1 ? "🔥 1 correct" : "";
+  $("streak").textContent = streak >= 2 ? `🔥 ${streak} in a row` : "";
 }
 
 // ---------- Play ----------
@@ -188,7 +188,7 @@ async function nextRound() {
   $("result").classList.add("hidden");
   $("btn-next").classList.add("hidden");
   $("btn-phish").disabled = $("btn-legit").disabled = true;
-  $("message").className = "card";   // clears the glow or shake from the last round
+  $("message").className = "ps-card";   // clears the glow or shake from the last round
   $("message").style.transformOrigin = "";
   $("pop-layer").innerHTML = "";
   $("reaction").className = "reaction hidden";
@@ -580,7 +580,7 @@ async function answer(guess) {
     $("result").innerHTML = `
       <h3>This one was <b>${esc(r.game_answer)}</b>.</h3>
       ${flags}<p>${esc(r.explanation)}</p>${went}${nudge}`;
-    $("result").className = `card ${kind === "hooked" ? "bad" : kind === "cautious" ? "gentle" : "good"}`;
+    $("result").className = `ps-card ${kind === "hooked" ? "bad" : kind === "cautious" ? "gentle" : "good"}`;
     $("progress").textContent = `${mode.toUpperCase()} · Round ${round} of ${ROUNDS} · ${correct} correct`;
     $("btn-next").textContent = round < ROUNDS ? "Next" : "See results";
     $("btn-next").classList.remove("hidden");
@@ -682,15 +682,17 @@ async function finish() {
 $("btn-home").addEventListener("click", () => show("start-screen"));
 
 // ---------- Leaderboard ----------
+// The same list is shown on the home screen and the end screen.
 async function loadLeaderboard() {
   const rows = await apiLeaderboard();
-  $("leaderboard").innerHTML = rows.length
+  const html = rows.length
     ? rows.map((p) => {
         const icons = p.badges.map((b) => BADGES[b]?.split(" ")[0] || "").join(" ");
         const master = ALL_MODES.every((b) => p.badges.includes(b)) ? " 🏆" : "";
         return `<li><b>${esc(p.username)}</b> ${icons}${master} <span>${p.total_score} pts</span></li>`;
       }).join("")
     : '<li class="empty">No scores yet. Be the first!</li>';
+  document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));
 }
 
 const ready = checkBackend();
