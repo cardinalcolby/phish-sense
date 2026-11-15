@@ -1,0 +1,17 @@
+<pasted_content id="77e1">
+Adjust the home screen layout. Front end only (public/ files), keep all colors and icons.
+
+1. Move "Earn all 3 badges to become a PhishSense Master" out of the Masters card and back under the three difficulty buttons, centered, with the trophy icon in front. Keep the yellow highlight on "become a PhishSense Master".
+
+2. Make the center column bigger so it fills more of the screen:
+   - Logo about 30% larger, PhishSense title about 25% larger, and slightly more space under "DON'T GET HOOKED."
+   - Name input and difficulty buttons taller (buttons about 120px tall) with larger text and icons.
+   - Give the center column a bit more width than the side cards (about 25% / 50% / 25%).
+   - Vertically, the center content should fill the page down toward the waves, without needing to scroll at 1920x1080 or 1366x768.
+
+3. Keep the Leaderboard and Masters cards the same width and height as each other. In the Masters card, since the "Earn all 3" text moved out, center the list of Masters in the card. If there are only 1 or 2 Masters, show a soft line under them: "Can you join them?" so the card doesn't look empty.
+
+4. Phones under 900px: keep the stacked order (logo, name, difficulty, master line, Masters, leaderboard).
+
+Check at 1920x1080 and 1366x768 with nothing cut off or overlapping. Commit with "Enlarge center column and move master goal under levels" and push to Abigail_Front_End_Work.
+</pasted_content id="77e1">
