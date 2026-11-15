@@ -88,3 +88,40 @@ jobs:
       - name: Clean up key
         if: always()
         run: rm -f ~/.ssh/id_deploy
+
+  # After a successful deploy, comment on the PR that was merged.
+  # This workflow runs on push to main (not a pull_request event), so
+  # the PR number is looked up from the merged commit.
+  comment-on-pr:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Find the merged PR for this commit
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].number // empty')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          if [ -z "$number" ]; then echo "No PR found for ${{ github.sha }}; skipping comment."; fi
+
+      #[Success | id: deploy] - Comment on PR with the production link
+      - name: Comment on PR with the live link
+        if: steps.find-pr.outputs.number != ''
+        uses: peter-evans/create-or-update-comment@v4
+        id: pr-production-comment
+        with:
+          issue-number: ${{ steps.find-pr.outputs.number }}
+          body: |
+            ### WebApp Production Deployment
+            🔗 Live site: https://phishsense.design/
+            💻 Commit SHA: ${{ github.sha }}
+
+            - Your changes have been pushed to production and are now live.
+            - Future merges to `main` will redeploy the live site automatically.
+
+            > *This is an automated message.*
+          reactions: "rocket"

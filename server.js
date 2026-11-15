@@ -15,6 +15,19 @@ const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL?.includes("localhost") ? false : { rejectUnauthorized: false },
 });
+// A dropped idle connection must not crash the whole app.
+db.on("error", (err) => console.error("Database pool error:", err.message));
+
+// Express 4 doesn't catch errors from async routes. Without this, one failed
+// database query crashes Node and nginx shows "502 Bad Gateway" for everyone.
+const safe = (handler) => async (req, res) => {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    console.error(`${req.method} ${req.path} failed:`, err.message || err.code || err);
+    if (!res.headersSent) res.status(500).json({ error: "Server error" });
+  }
+};
 const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
 
 const MODES = ["easy", "medium", "hard"];
@@ -89,7 +102,7 @@ ${JSON.stringify(examples)}`;
 // ---------- Routes ----------
 
 // 1. Get a scenario (Gemini first, sheet backup if Gemini fails)
-app.get("/api/scenario", async (req, res) => {
+app.get("/api/scenario", safe(async (req, res) => {
   const mode = MODES.includes(req.query.mode) ? req.query.mode : "easy";
   const seen = String(req.query.seen || "").split(",").map(Number).filter(Boolean); // avoid repeats in a run
   let row;
@@ -116,15 +129,16 @@ app.get("/api/scenario", async (req, res) => {
     );
     row = rows[0];
   }
+  if (!row) return res.status(404).json({ error: "No scenarios found" });
   // Only send what the player should see. The answer stays on the server.
   res.json({
     scenario_id: row.scenario_id, channel: row.channel, sender: row.sender,
     subject: row.subject, body: row.body, link: row.link,
   });
-});
+}));
 
 // 2. Check an answer
-app.post("/api/answer", async (req, res) => {
+app.post("/api/answer", safe(async (req, res) => {
   const { scenario_id, guess } = req.body;
   const { rows } = await db.query(`SELECT * FROM scenarios WHERE scenario_id = $1`, [scenario_id]);
   if (!rows[0]) return res.status(404).json({ error: "Scenario not found" });
@@ -135,10 +149,10 @@ app.post("/api/answer", async (req, res) => {
     red_flags: s.red_flags,
     explanation: s.explanation,
   });
-});
+}));
 
 // 3. Save a finished run (adds points, and the badge if they earned it)
-app.post("/api/score", async (req, res) => {
+app.post("/api/score", safe(async (req, res) => {
   const username = String(req.body.username || "").trim().slice(0, 20);
   const points = Number(req.body.points) || 0;
   const badge = req.body.badge ? [req.body.badge] : [];
@@ -153,16 +167,27 @@ app.post("/api/score", async (req, res) => {
     [username, points, badge]
   );
   res.json(rows[0]);
-});
+}));
 
 // 4. Leaderboard (most badges first, then highest score)
-app.get("/api/leaderboard", async (req, res) => {
+app.get("/api/leaderboard", safe(async (req, res) => {
   const { rows } = await db.query(
     `SELECT username, total_score, badges FROM scores
       ORDER BY cardinality(badges) DESC, total_score DESC LIMIT 50`
   );
   res.json(rows);
-});
+}));
+
+// 5. PhishSense Masters: every player with all three badges, highest score first
+app.get("/api/masters", safe(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT username, total_score, badges FROM scores
+      WHERE badges @> $1::text[]
+      ORDER BY total_score DESC, updated_at ASC LIMIT 50`,
+    [MODES]
+  );
+  res.json(rows);
+}));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`PhishSense running at http://localhost:${PORT}`));
