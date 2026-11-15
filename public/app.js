@@ -233,7 +233,7 @@ async function nextRound() {
   seen.push(current.scenario_id);
   $("message").innerHTML = renderMessage(current);
   $("btn-phish").disabled = $("btn-legit").disabled = false;
-  if (round === 1 && !tutorialSeen()) startTutorial();
+  maybeStartFirstRoundTutorial();   // waits for layout, then shows tip 1 on a new player's first round
 }
 
 // A steady clock time per scenario, so the inbox and phone look real
@@ -388,19 +388,35 @@ window.addEventListener("scroll", placePeek, { passive: true });
 window.addEventListener("resize", placePeek);
 
 // ---------- First-round tutorial ----------
-// The first time a player starts a run, three callouts point at the sender,
-// the link, and the Phish / Legit buttons, one at a time. The "?" button in
-// the top bar replays it. Callouts never block the game: answering closes them.
+// On a new player's first round, three callouts point at the sender, the link,
+// and the Phish / Legit buttons, one at a time. The "?" button in the top bar
+// replays it. Callouts never block the game: answering closes them.
+//
+// The "seen it" flag is saved ONLY when the player finishes (Got it on the
+// last tip) or skips (Skip tutorial, Escape, or the "?" button while open).
+// Anything else that closes it (answering, Next, leaving the screen) does not
+// save, so the tutorial comes back on their next first round.
 const TUTORIAL_KEY = "ps-tutorial-seen";
 const canHover = () => window.matchMedia("(hover: hover)").matches;
+const inMessage = (...selectors) => {
+  for (const sel of selectors) {
+    const el = document.querySelector(`#message ${sel}`);
+    if (el) return el;
+  }
+  return null;
+};
+
+// Each step lists its targets in order of preference and always ends on a
+// fallback that exists, so a step is never skipped.
 const TUTORIAL_STEPS = [
   {
-    target: () => document.querySelector("#message .from, #message .sms .label"),
+    // Email: the From line. Text message: the phone's contact name.
+    target: () => inMessage(".email .from", ".email .email-who", ".sms .label b", ".sms .label", ".email-head") || $("message"),
     text: () => "Check who it's really from. Compare it to your trusted contacts.",
   },
   {
-    // Point at the link, or at the message itself when there's no link
-    target: () => document.querySelector("#message .link-chip") || document.querySelector("#message .body, #message .bubble"),
+    // The link, or the message body when there's no link
+    target: () => inMessage(".link-chip", ".email .body", ".sms .bubble") || $("message"),
     text: () => `${canHover() ? "Hover" : "Tap"} links to see where they really go.`,
   },
   {
@@ -428,6 +444,22 @@ let tutTarget = null;  // the element the current callout points at
 let tutReturn = null;  // where keyboard focus goes back to afterwards
 
 const messageReady = () => !!document.querySelector("#message .email, #message .sms");
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+// Called by nextRound() right after the scenario is rendered. Waits for the
+// browser to lay the message out (two frames, and the web font, capped at a
+// short wait) so the first callout lands in the right place.
+async function maybeStartFirstRoundTutorial() {
+  if (round !== 1 || tutorialSeen()) return;
+  const forRound = current;
+  await nextFrame();
+  await nextFrame();
+  if (document.fonts?.ready) await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))]);
+  // Still the same first-round message, on the play screen, with nothing in the way?
+  if (current !== forRound || round !== 1 || answering || tutStep >= 0) return;
+  if (document.body.dataset.screen !== "play-screen" || !messageReady()) return;
+  startTutorial();
+}
 
 function startTutorial() {
   if (!messageReady()) return;
@@ -445,12 +477,11 @@ function clearTutorialTarget() {
 
 function showTutorialStep() {
   clearTutorialTarget();
-  // Skip any step whose target isn't on the page
-  while (tutStep < TUTORIAL_STEPS.length && !TUTORIAL_STEPS[tutStep].target()) tutStep++;
-  if (tutStep >= TUTORIAL_STEPS.length) return endTutorial();
+  if (tutStep >= TUTORIAL_STEPS.length) return endTutorial({ save: true });   // finished
 
   const step = TUTORIAL_STEPS[tutStep];
   tutTarget = step.target();
+  if (!tutTarget) return endTutorial({ save: false });   // play screen is gone
   tutTarget.classList.add("tut-target");
   tut.innerHTML = `
     <span class="tut-arrow" aria-hidden="true"></span>
@@ -473,7 +504,13 @@ function showTutorialStep() {
 // Below the target when there's room, otherwise above it, always on screen.
 function placeTutorial() {
   if (tutStep < 0 || !tutTarget) return;
-  if (!document.body.contains(tutTarget)) return endTutorial();
+  if (!document.body.contains(tutTarget)) {
+    // The message was re-rendered under the callout: point at the new element.
+    const fresh = TUTORIAL_STEPS[tutStep].target();
+    if (!fresh) return endTutorial({ save: false });
+    tutTarget = fresh;
+    tutTarget.classList.add("tut-target");
+  }
   const gap = 14, edge = 12;
   const vw = document.documentElement.clientWidth, vh = window.innerHeight;
   const r = tutTarget.getBoundingClientRect();
@@ -481,18 +518,20 @@ function placeTutorial() {
   const below = vh - r.bottom >= h + gap + edge || r.top - gap - h < edge;
   const top = Math.min(Math.max(edge, below ? r.bottom + gap : r.top - gap - h), vh - h - edge);
   const x = r.left + Math.min(r.width / 2, 90);   // wide targets: point near their left side
-  const left = Math.min(Math.max(edge, x - w / 2), vw - w - edge);
+  // Never start left of the target, so it doesn't hang off the side of the message
+  const left = Math.min(Math.max(edge, r.left, x - w / 2), vw - w - edge);
   tut.dataset.side = below ? "below" : "above";
   tut.style.top = `${top}px`;
   tut.style.left = `${left}px`;
   tut.style.setProperty("--arrow-x", `${Math.min(Math.max(22, x - left), w - 22)}px`);
 }
 
-function endTutorial() {
+// save: true only when the player finished or skipped the tutorial.
+function endTutorial({ save = false } = {}) {
   if (tutStep < 0) return;
   tutStep = -1;
   clearTutorialTarget();
-  markTutorialSeen();
+  if (save) markTutorialSeen();
   $("btn-tutorial").classList.remove("open");
   const hadFocus = tut.contains(document.activeElement);
   tut.hidden = true;
@@ -504,17 +543,17 @@ function endTutorial() {
 }
 
 tut.addEventListener("click", (e) => {
-  if (e.target.closest(".tut-skip")) return endTutorial();
+  if (e.target.closest(".tut-skip")) return endTutorial({ save: true });
   if (e.target.closest(".tut-ok")) {
     tutStep++;
     showTutorialStep();
   }
 });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") endTutorial(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") endTutorial({ save: true }); });
 window.addEventListener("scroll", placeTutorial, { passive: true });
 window.addEventListener("resize", placeTutorial);
 $("btn-tutorial").addEventListener("click", () => {
-  if (tutStep >= 0) return endTutorial();
+  if (tutStep >= 0) return endTutorial({ save: true });
   if (!answering) startTutorial();
 });
 

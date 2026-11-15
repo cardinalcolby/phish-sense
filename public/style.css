@@ -302,6 +302,7 @@ button.mode:focus-visible { outline: 2px solid var(--tier); outline-offset: 2px;
 /* The message body fills the email edge to edge, so its ring sits inside */
 .email .body.tut-target, .sms .bubble.tut-target { outline-offset: -3px; }
 .sms .bubble.tut-target { border-radius: 18px 18px 18px 4px; }
+.sms .label b.tut-target { outline-offset: 1px; }   /* keeps clear of "Text message from" above */
 
 /* ---------- Message area: glow, shake, floating score ---------- */
 .message-wrap { position: relative; }
