@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS scenarios (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Table 2: the leaderboard (one row per player). Feeds the Leaderboard and
--- PhishSense Masters cards on the home screen. Columns match what server.js
--- writes in POST /api/score and what app.js reads: username, total_score, badges.
+-- Table 2: the leaderboard (one row per player: running total and badges).
+-- Feeds the Leaderboard and PhishSense Masters cards on the home screen.
+-- Every game behind those totals is kept in Table 3 (scores).
 -- An older setup had a read-only VIEW named "leaderboard" over "scores". A view
 -- would block this table from being created, so replace it if it's still there.
 DO $$
@@ -46,18 +46,55 @@ CREATE INDEX IF NOT EXISTS leaderboard_rank_idx
   ON leaderboard ((cardinality(badges)) DESC, total_score DESC);
 CREATE INDEX IF NOT EXISTS leaderboard_badges_idx ON leaderboard USING GIN (badges);
 
--- One-time copy: players saved in the old "scores" table move into
--- "leaderboard". Skips anyone already there, so running this again is harmless.
--- The old table is left in place; drop it yourself once you've checked the data.
+-- Older versions used "scores" as the leaderboard itself (one row per player:
+-- username, total_score, badges). If that old table is still here, copy its
+-- players into "leaderboard", then rename it to scores_legacy_<timestamp> so
+-- nothing is lost and "scores" can become the per-game table below.
+-- Drop the legacy table yourself once you've checked the data.
 DO $$
+DECLARE
+  legacy TEXT;
+  idx    RECORD;
 BEGIN
-  IF to_regclass('public.scores') IS NOT NULL THEN
-    INSERT INTO leaderboard (username, total_score, badges, updated_at)
-    SELECT left(username, 20), total_score, badges, updated_at FROM scores
-    WHERE char_length(username) BETWEEN 1 AND 20
-    ON CONFLICT (username) DO NOTHING;
+  IF to_regclass('public.scores') IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'scores' AND column_name = 'score_id') THEN
+    IF (SELECT COUNT(*) FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'scores'
+           AND column_name IN ('username', 'total_score', 'badges')) = 3 THEN
+      INSERT INTO leaderboard (username, total_score, badges)
+      SELECT left(trim(username), 20), total_score, COALESCE(badges, '{}') FROM scores
+       WHERE char_length(trim(username)) BETWEEN 1 AND 20
+      ON CONFLICT (username) DO NOTHING;
+    END IF;
+    legacy := 'scores_legacy_' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISS');
+    EXECUTE format('ALTER TABLE public.scores RENAME TO %I', legacy);
+    -- Index names (like scores_pkey) must be unique, so rename the old ones too
+    FOR idx IN SELECT i.relname FROM pg_index x JOIN pg_class i ON i.oid = x.indexrelid
+                WHERE x.indrelid = format('public.%I', legacy)::regclass LOOP
+      EXECUTE format('ALTER INDEX public.%I RENAME TO %I', idx.relname, left(legacy || '_' || idx.relname, 63));
+    END LOOP;
+    RAISE NOTICE 'Old scores table renamed to %', legacy;
   END IF;
 END $$;
+
+-- Table 3: scores (one row per finished game). POST /api/score writes a row
+-- here and adds its points and badge to the player's leaderboard row in the
+-- same transaction. run_id comes from the browser, so a save that is retried
+-- (for example after the database was down) is never counted twice.
+CREATE TABLE IF NOT EXISTS scores (
+  score_id     BIGSERIAL PRIMARY KEY,
+  run_id       TEXT UNIQUE,
+  username     TEXT NOT NULL REFERENCES leaderboard (username) ON UPDATE CASCADE ON DELETE CASCADE,
+  mode         TEXT NOT NULL CHECK (mode IN ('easy', 'medium', 'hard')),
+  correct      INTEGER NOT NULL CHECK (correct >= 0),
+  rounds       INTEGER NOT NULL CHECK (rounds > 0),
+  points       INTEGER NOT NULL DEFAULT 0,
+  passed       BOOLEAN NOT NULL DEFAULT false,
+  badge        TEXT,                        -- the mode, if this game earned its badge
+  played_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS scores_player_idx ON scores (username, played_at DESC);
 
 -- Load the 20 backup scenarios from the Google Sheet
 INSERT INTO scenarios

@@ -107,48 +107,163 @@ async function apiAnswer(scenario_id, guess) {
   return { correct: guess === s.game_answer, game_answer: s.game_answer, red_flags: s.red_flags, explanation: s.explanation };
 }
 
-async function apiSaveScore(username, points, badge) {
-  if (OFFLINE) {
-    const board = JSON.parse(localStorage.getItem("ps-board") || "{}");
-    const p = board[username] || { username, total_score: 0, badges: [] };
-    p.total_score += points;
-    if (badge && !p.badges.includes(badge)) p.badges.push(badge);
-    board[username] = p;
-    try { localStorage.setItem("ps-board", JSON.stringify(board)); } catch (e) {}
-    return p;
+// ---------- Scores: database first, this browser as the backup ----------
+// Every finished game is saved in this browser AND sent to the database
+// (scores + leaderboard tables). If the database can't be reached, the game
+// waits in a "pending" list and is sent the next time it can be. The
+// Leaderboard and Masters lists come from the database; when it's down they
+// are built from the last list the database sent plus games saved here.
+const LS_BOARD = "ps-board";         // players and games played in this browser
+const LS_CACHE = "ps-board-cache";   // the last full leaderboard the database sent
+const LS_PENDING = "ps-pending";     // finished games not yet saved to the database
+const LOCAL_GAMES_KEPT = 20;         // recent games kept per player in this browser
+
+function readLocal(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    return v ?? fallback;
+  } catch (e) {
+    return fallback;
   }
-  return fetch("/api/score", {
+}
+function writeLocal(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+
+const newRunId = () =>
+  (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`);
+
+const hasAllBadges = (p) => ALL_MODES.every((b) => (p.badges || []).includes(b));
+const rankBoard = (rows) =>
+  rows.sort((a, b) => b.badges.length - a.badges.length || b.total_score - a.total_score);
+const rankMasters = (rows) =>
+  rows.filter(hasAllBadges).sort((a, b) => b.total_score - a.total_score);
+
+// Add one finished game to this browser's copy of the player
+function saveGameLocally(game) {
+  const board = readLocal(LS_BOARD, {});
+  const p = board[game.username] || { username: game.username, total_score: 0, badges: [], games: [] };
+  p.games = Array.isArray(p.games) ? p.games : [];
+  if (!p.games.some((g) => g.run_id === game.run_id)) {
+    p.total_score += game.points;
+    if (game.badge && !p.badges.includes(game.badge)) p.badges.push(game.badge);
+    p.games = [game, ...p.games].slice(0, LOCAL_GAMES_KEPT);
+    p.games_played = (p.games_played || 0) + 1;
+    p.best_points = Math.max(p.best_points || 0, game.points);
+    p.last_played = game.played_at;
+  }
+  board[game.username] = p;
+  writeLocal(LS_BOARD, board);
+  return p;
+}
+
+// Backup list for when the database is down: start from the last list the
+// database sent, add games still waiting to be saved, then fill in anyone who
+// has only ever played in this browser.
+function fallbackBoard() {
+  const rows = new Map();
+  readLocal(LS_CACHE, []).forEach((p) => rows.set(p.username, { ...p, badges: [...(p.badges || [])] }));
+  readLocal(LS_PENDING, []).forEach((g) => {
+    const p = rows.get(g.username);
+    if (!p) return;
+    p.total_score += g.points;
+    p.games_played = (p.games_played || 0) + 1;
+    if (g.badge && !p.badges.includes(g.badge)) p.badges.push(g.badge);
+  });
+  Object.values(readLocal(LS_BOARD, {})).forEach((l) => {
+    const p = rows.get(l.username);
+    if (!p) return rows.set(l.username, { ...l, badges: [...(l.badges || [])] });
+    p.total_score = Math.max(p.total_score, l.total_score);
+    (l.badges || []).forEach((b) => p.badges.includes(b) || p.badges.push(b));
+  });
+  return [...rows.values()];
+}
+
+// Send one game to the database. A 4xx means the server will never accept it
+// (bad data), so the caller should drop it instead of retrying forever.
+async function postGame(game) {
+  const r = await fetch("/api/score", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, points, badge }),
-  }).then((r) => r.json());
+    body: JSON.stringify(game),
+  });
+  if (!r.ok) {
+    const err = new Error(`/api/score returned ${r.status}`);
+    err.permanent = r.status >= 400 && r.status < 500;
+    throw err;
+  }
+  return r.json();
 }
 
-// Practice mode keeps scores in this browser only
-function localBoard() {
-  let board = {};
-  try { board = JSON.parse(localStorage.getItem("ps-board") || "{}"); } catch (e) {}
-  return Object.values(board);
+// Send any games that were played while the database was down, oldest first.
+// Stops at the first failure and tries again later. Returns how many were saved.
+let flushing = null;
+function flushPending() {
+  if (OFFLINE) return Promise.resolve(0);
+  if (flushing) return flushing;
+  flushing = (async () => {
+    let saved = 0;
+    for (const game of readLocal(LS_PENDING, [])) {
+      try {
+        await postGame(game);
+        saved++;
+      } catch (e) {
+        if (!e.permanent) break;
+        console.warn("Dropping a game the server rejected:", e.message);
+      }
+      writeLocal(LS_PENDING, readLocal(LS_PENDING, []).filter((g) => g.run_id !== game.run_id));
+    }
+    return saved;
+  })().finally(() => { flushing = null; });
+  return flushing;
 }
 
-// Leaderboard: rows from the leaderboard table (most badges, then highest score)
+// Save a finished game. Returns the player's totals (badges, total_score) and
+// where they came from: "db" or "local".
+async function apiSaveScore(username, mode, correct) {
+  const passed = correct >= TO_PASS;
+  const game = {
+    run_id: newRunId(), username, mode, correct, rounds: ROUNDS,
+    points: correct * PER_CORRECT, passed, badge: passed ? mode : null,
+    played_at: new Date().toISOString(),
+  };
+  const local = saveGameLocally(game);
+  if (OFFLINE) return { ...local, source: "local" };
+
+  try {
+    await flushPending();
+    return { ...(await postGame(game)), source: "db" };
+  } catch (e) {
+    console.error("Couldn't save the game to the database, keeping it in this browser:", e.message);
+    if (!e.permanent) writeLocal(LS_PENDING, [...readLocal(LS_PENDING, []), game]);
+    const backup = fallbackBoard().find((p) => p.username === username) || local;
+    return { ...backup, source: "local" };
+  }
+}
+
+// Leaderboard: every player in the database (most badges, then highest score),
+// or the backup list if the database can't be reached.
 async function apiLeaderboard() {
-  if (OFFLINE) {
-    return localBoard()
-      .sort((a, b) => b.badges.length - a.badges.length || b.total_score - a.total_score)
-      .slice(0, 50);   // same cap as the server
+  if (OFFLINE) return { rows: rankBoard(fallbackBoard()), source: "local" };
+  try {
+    const rows = await getJson("/api/leaderboard");
+    writeLocal(LS_CACHE, rows);
+    return { rows, source: "db" };
+  } catch (e) {
+    console.error("Leaderboard: database unavailable, using scores saved in this browser.", e.message);
+    return { rows: rankBoard(fallbackBoard()), source: "local" };
   }
-  return getJson("/api/leaderboard");
 }
 
-// Masters: players in the leaderboard table with all three badges
+// Masters: players with all three badges, from the database or the backup list
 async function apiMasters() {
-  if (OFFLINE) {
-    return localBoard()
-      .filter((p) => ALL_MODES.every((b) => p.badges.includes(b)))
-      .sort((a, b) => b.total_score - a.total_score);
+  if (OFFLINE) return { rows: rankMasters(fallbackBoard()), source: "local" };
+  try {
+    return { rows: await getJson("/api/masters"), source: "db" };
+  } catch (e) {
+    console.error("Masters: database unavailable, using scores saved in this browser.", e.message);
+    return { rows: rankMasters(fallbackBoard()), source: "local" };
   }
-  return getJson("/api/masters");
 }
 
 // ---------- Trusted contacts ----------
@@ -1113,8 +1228,9 @@ function renderRecap() {
 
 async function finish() {
   const passed = correct >= TO_PASS;
-  const badge = passed ? mode : null;
-  const player = await apiSaveScore($("username").value.trim(), correct * PER_CORRECT, badge);
+  // Same clean-up as the server, so this browser and the database use the same name
+  const username = $("username").value.trim().replace(/\s+/g, " ").slice(0, 20);
+  const player = await apiSaveScore(username, mode, correct);
 
   const owned = Array.isArray(player?.badges) ? player.badges : (passed ? [mode] : []);
   const isMaster = ALL_MODES.every((m) => owned.includes(m));
@@ -1137,52 +1253,48 @@ $("btn-home").addEventListener("click", () => show("start-screen"));
 // ---------- Leaderboard ----------
 // The same list is shown on the home screen and the end screen.
 const LEADERBOARD_SHOWN = 7;   // rows shown, so the card doesn't run too tall
-const isMasterPlayer = (p) => ALL_MODES.every((b) => p.badges.includes(b));
 
 // One row: rank (or trophy) | name + badge icons | points
 function leaderboardRow(lead, p, withIcons) {
   const icons = withIcons
     ? p.badges.filter((m) => BADGES[m])
         .map((m) => `<span class="lb-badge" title="${BADGES[m]} badge">${badgeIcon(m)}</span>`).join("") +
-      (isMasterPlayer(p) ? '<span class="lb-badge" title="PhishSense Master">🏆</span>' : "")
+      (hasAllBadges(p) ? '<span class="lb-badge" title="PhishSense Master">🏆</span>' : "")
     : "";
   return `<li class="lb-row"><span class="lb-rank">${lead}</span>` +
     `<span class="lb-who"><b class="lb-name" title="${esc(p.username)}">${esc(p.username)}</b>${icons}</span>` +
     `<span class="lb-score">${p.total_score} pts</span></li>`;
 }
 
-const LOAD_ERROR = '<li class="empty">Couldn\'t load scores right now. Try again soon.</li>';
+// Shown under a list when the database couldn't be reached (not in practice
+// mode, where saving in the browser is expected)
+const LOCAL_NOTE = '<li class="empty lb-note">Can\'t reach the database right now. Showing scores saved on this device.</li>';
 
-// Both lists load from the database at the same time; if one fails, the other still shows
+// Both lists load from the database at the same time. Neither ever fails:
+// if the database is down, each falls back to the scores saved in this browser.
 async function loadLeaderboard() {
-  const [board, mastersResult] = await Promise.allSettled([apiLeaderboard(), apiMasters()]);
+  const [board, masters] = await Promise.all([apiLeaderboard(), apiMasters()]);
 
-  let html = LOAD_ERROR;
-  if (board.status === "fulfilled") {
-    const rows = board.value;
-    html = rows.length
-      ? rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
-      : '<li class="empty">No scores yet. Be the first!</li>';
-  } else {
-    console.error("Leaderboard failed to load:", board.reason);
-  }
+  const boardNote = board.source === "local" && !OFFLINE ? LOCAL_NOTE : "";
+  const html = (board.rows.length
+    ? board.rows.slice(0, LEADERBOARD_SHOWN).map((p, i) => leaderboardRow(i + 1, p, true)).join("")
+    : '<li class="empty">No scores yet. Be the first!</li>') + boardNote;
   document.querySelectorAll(".leaderboard-list").forEach((el) => (el.innerHTML = html));
 
   // Home screen: Masters (all three badges) get their own list
-  const mastersList = $("start-screen").querySelector(".masters-list");
-  const masters = mastersResult.status === "fulfilled" ? mastersResult.value : [];
-  if (mastersResult.status === "fulfilled") {
-    mastersList.innerHTML = masters.length
-      ? masters.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
-      : '<li class="empty">No Masters yet. Be the first!</li>';
-  } else {
-    console.error("Masters failed to load:", mastersResult.reason);
-    mastersList.innerHTML = LOAD_ERROR;
-  }
+  const mastersNote = masters.source === "local" && !OFFLINE ? LOCAL_NOTE : "";
+  $("start-screen").querySelector(".masters-list").innerHTML = (masters.rows.length
+    ? masters.rows.map((p) => leaderboardRow('<span aria-hidden="true">🏆</span>', p, false)).join("")
+    : '<li class="empty">No Masters yet. Be the first!</li>') + mastersNote;
   // Only 1 or 2 Masters: a soft nudge underneath so the card doesn't look empty
   $("start-screen").querySelector(".masters-join")
-    .classList.toggle("hidden", !(masters.length === 1 || masters.length === 2));
+    .classList.toggle("hidden", !(masters.rows.length === 1 || masters.rows.length === 2));
 }
 
+// On load: find the backend, send any games saved while the database was
+// down, then show the lists (again, if the sync added anything).
 const ready = checkBackend();
-ready.then(loadLeaderboard);
+ready.then(async () => {
+  await loadLeaderboard();
+  if ((await flushPending()) > 0) loadLeaderboard();
+});
