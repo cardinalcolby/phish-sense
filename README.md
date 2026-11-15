@@ -67,9 +67,10 @@ When a round starts, the backend asks Gemini for a new scenario and shows it two
 Open `public/index.html` in a browser, or right-click it in VS Code and choose **Open with Live Server**. The game runs on the 20 backup scenarios, and the leaderboard saves in your browser.
 
 ### Option 2: Full app (Gemini + database)
-1. **Database:** create a Vultr Managed Database (PostgreSQL). Connect to it with a SQL tool such as psql or pgAdmin, using the connection details from Vultr, then run `setup.sql`. The last result should show easy 8, hard 5, medium 7.
+1. **Database:** create a Vultr Managed Database (PostgreSQL) with a database named `appdb`. The server runs `setup.sql` every time it starts: it creates the `scenarios` and `scores` tables if they're missing and loads the 20 backup scenarios. Visit `/api/health` to check the connection and row counts.
 2. **Keys:** copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL`: your Vultr database connection string
+   - `DATABASE_URL`: your Vultr database connection string, ending in `/appdb` (not `/defaultdb`)
+   - `DATABASE_CA_CERT` (optional): path to the CA certificate from the Vultr database page, to verify the server
    - `GEMINI_API_KEY`: from Google AI Studio
    - `GEMINI_MODEL`: the current Gemini Flash model name
 3. **Run:** `npm install`, then `npm start`, and open http://localhost:3000
@@ -84,6 +85,8 @@ The full app also works without a Gemini key. It just uses the backup scenarios.
 | `POST /api/answer` | `{ scenario_id, guess }` returns whether it was right, the red flags, and the explanation. |
 | `POST /api/score` | `{ username, points, badge }` saves a finished run. |
 | `GET /api/leaderboard` | Top 50 players. |
+| `GET /api/masters` | Players with all three badges. |
+| `GET /api/health` | Database name and row counts, or 503 if the database can't be reached. |
 
 ## Project files
 
