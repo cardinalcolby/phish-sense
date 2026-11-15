@@ -1,0 +1,21 @@
+<pasted_content id="9c90">
+Home screen tweaks. Front end only (public/ files), keep all colors and icons.
+
+1. Move "Spot the scams before they hook you." up so it sits directly under "DON'T GET HOOKED." as part of the logo and title group.
+2. Move the whole page content down a bit (logo, title, taglines, columns) so the top and bottom spacing look balanced, with the group vertically centered in the space above the waves. Nothing should need scrolling at 1920x1080 or 1366x768.
+3. In the PhishSense Masters card, list the Masters at the top, right under the "PhishSense Masters" heading (not vertically centered).
+4. Change "Can you join them?" to "Can you join the crew?" and put it right under the last Master.
+5. Remove the trophy icon to the left of "Leaderboard" in the leaderboard heading. Keep the trophy in "PhishSense Masters".
+
+Commit with "Balance home spacing and update Masters card" and push to Abigail_Front_End_Work.
+</pasted_content id="9c90">
+
+---
+
+<task-notification>
+<task-id>bjpbus3nk</task-id>
+<tool-use-id>toolu_01XyKzzCPvTGP7BZqXWuJmey</tool-use-id>
+<output-file>C:\Users\black\AppData\Local\Temp\claude\1da4ec57c02c3532\5b855115-d6c1-4228-9b5c-0e420f61b48e\tasks\bjpbus3nk.output</output-file>
+<status>failed</status>
+<summary>Background command "Start the app server" failed with exit code 1</summary>
+</task-notification>
