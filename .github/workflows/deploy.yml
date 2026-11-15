@@ -1,0 +1,90 @@
+# Deploys PhishSense to the Vultr Ubuntu server whenever main changes
+# (merging a PR into main on GitHub is a push to main).
+#
+# Required GitHub secrets (repo Settings -> Secrets and variables -> Actions):
+#   VULTR_HOST         server IP or hostname
+#   VULTR_USER         SSH user on the server (e.g. deploy)
+#   VULTR_SSH_KEY      private key whose public half is in that user's ~/.ssh/authorized_keys
+#   VULTR_KNOWN_HOSTS  output of: ssh-keyscan -t ed25519 <VULTR_HOST>
+name: Deploy to Vultr
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two deploys at once; a newer merge waits for the current deploy.
+concurrency:
+  group: deploy-vultr
+  cancel-in-progress: false
+
+env:
+  APP_DIR: /var/www/phish-sense
+  SERVICE: phishsense
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install and sanity-check
+        run: |
+          npm ci
+          node --check server.js
+          for f in public/*.js; do node --check "$f"; done
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.VULTR_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VULTR_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_deploy ~/.ssh/known_hosts
+          command -v rsync >/dev/null || (sudo apt-get update && sudo apt-get install -y rsync)
+
+      - name: Upload app
+        env:
+          HOST: ${{ secrets.VULTR_HOST }}
+          USER: ${{ secrets.VULTR_USER }}
+        run: |
+          # .env lives only on the server and is never overwritten or deleted.
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_deploy" \
+            --exclude '.git' --exclude 'node_modules' --exclude '.env' \
+            --exclude '.github' --exclude '.entire' --exclude '.claude' --exclude 'deploy' \
+            ./ "$USER@$HOST:$APP_DIR/"
+
+      - name: Install dependencies and restart
+        env:
+          HOST: ${{ secrets.VULTR_HOST }}
+          USER: ${{ secrets.VULTR_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" \
+            "cd $APP_DIR && npm ci --omit=dev && sudo systemctl restart $SERVICE"
+
+      - name: Health check
+        env:
+          HOST: ${{ secrets.VULTR_HOST }}
+          USER: ${{ secrets.VULTR_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" '
+            for i in $(seq 1 15); do
+              curl -fsS -o /dev/null http://127.0.0.1:3000/ && echo "App is up" && exit 0
+              sleep 2
+            done
+            echo "App did not come up; recent logs:"
+            sudo journalctl -u '"$SERVICE"' -n 50 --no-pager
+            exit 1'
+
+      - name: Clean up key
+        if: always()
+        run: rm -f ~/.ssh/id_deploy
