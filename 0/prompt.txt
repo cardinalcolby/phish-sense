@@ -1,0 +1,5 @@
+Create a new table named "leaderboard" in my postgres database, based on how my app stores and retrieves leaderboard and PhishSense Masters data. I would like for my app to write to my database and retrieve data to populate these to areas based in my homepages UI successfully. Ensure all columns in DB match the models in my code ConnectionString="psql REDACTED" URL="REDACTED"
+
+---
+
+Create my table in my postgres db. Use my IP which is 24.125.208.217
