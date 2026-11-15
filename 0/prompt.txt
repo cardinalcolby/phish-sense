@@ -1,0 +1,19 @@
+7. Add 2 small schools of tiny fish (3 to 5 simple fish shapes each, inline SVG) that slowly swim across the background near the waves, one going left and one going right, about 25 to 40 seconds per pass. Make them very faint (opacity around 0.1 to 0.15) and a muted blue-gray, not teal, so they don't look like the fish cursor. Show them ONLY on the home screen. Remove them as soon as the player leaves the home screen, and show them again if they come back to it. Same rules as the waves: behind all content, pointer-events: none, no animation with prefers-reduced-motion, and hidden on phones under 900px.
+
+---
+
+yes
+
+---
+
+<pasted_content id="f7cf">
+Update the fish schools on the home screen so they swim all over the page instead of only near the waves. Keep everything else the same.
+
+1. Have 3 or 4 small schools (3 to 5 fish each) swim across the whole screen at different heights, including the top and the left and right sides.
+2. Give each school a gentle, slightly wavy path (a soft up-and-down drift while crossing), at different speeds (about 25 to 45 seconds per pass) and in different directions, so they don't move in sync.
+3. When a school finishes crossing, start it again from a random height so the pattern doesn't look repetitive.
+4. Keep them faint (opacity around 0.1 to 0.15), muted blue-gray, behind all content (cards, logo, and text stay on top), with pointer-events: none.
+5. Keep the existing rules: home screen only, hidden when the player leaves it, no animation with prefers-reduced-motion, and hidden on phones under 900px.
+
+Check at 1920x1080 and 1366x768 that the fish never cover any text or buttons. Commit with "Fish schools swim across the whole home screen" and push to Abigail_Front_End_Work.
+</pasted_content id="f7cf">
