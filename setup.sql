@@ -19,13 +19,45 @@ CREATE TABLE IF NOT EXISTS scenarios (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Table 2: the leaderboard
-CREATE TABLE IF NOT EXISTS scores (
-  username     TEXT PRIMARY KEY,
+-- Table 2: the leaderboard (one row per player). Feeds the Leaderboard and
+-- PhishSense Masters cards on the home screen. Columns match what server.js
+-- writes in POST /api/score and what app.js reads: username, total_score, badges.
+-- An older setup had a read-only VIEW named "leaderboard" over "scores". A view
+-- would block this table from being created, so replace it if it's still there.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+             WHERE n.nspname = 'public' AND c.relname = 'leaderboard' AND c.relkind IN ('v', 'm')) THEN
+    EXECUTE (SELECT CASE relkind WHEN 'v' THEN 'DROP VIEW public.leaderboard'
+                                 ELSE 'DROP MATERIALIZED VIEW public.leaderboard' END
+               FROM pg_class WHERE oid = 'public.leaderboard'::regclass);
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS leaderboard (
+  username     TEXT PRIMARY KEY CHECK (char_length(username) BETWEEN 1 AND 20),
   total_score  INTEGER NOT NULL DEFAULT 0,
-  badges       TEXT[] NOT NULL DEFAULT '{}',
+  badges       TEXT[] NOT NULL DEFAULT '{}',   -- any of 'easy', 'medium', 'hard'
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Speeds up the two ranking queries (Leaderboard and Masters)
+CREATE INDEX IF NOT EXISTS leaderboard_rank_idx
+  ON leaderboard ((cardinality(badges)) DESC, total_score DESC);
+CREATE INDEX IF NOT EXISTS leaderboard_badges_idx ON leaderboard USING GIN (badges);
+
+-- One-time copy: players saved in the old "scores" table move into
+-- "leaderboard". Skips anyone already there, so running this again is harmless.
+-- The old table is left in place; drop it yourself once you've checked the data.
+DO $$
+BEGIN
+  IF to_regclass('public.scores') IS NOT NULL THEN
+    INSERT INTO leaderboard (username, total_score, badges, updated_at)
+    SELECT left(username, 20), total_score, badges, updated_at FROM scores
+    WHERE char_length(username) BETWEEN 1 AND 20
+    ON CONFLICT (username) DO NOTHING;
+  END IF;
+END $$;
 
 -- Load the 20 backup scenarios from the Google Sheet
 INSERT INTO scenarios
